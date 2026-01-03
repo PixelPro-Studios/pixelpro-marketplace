@@ -1,8 +1,8 @@
 import { createClient } from "@/lib/supabase/server";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import Link from "next/link";
-import { QRScanner } from "@/components/admin/qr-scanner";
 import { SendInvoiceButton } from "@/components/admin/send-invoice-button";
+import { Pencil } from "lucide-react";
 
 async function getOrders() {
   const supabase = await createClient();
@@ -23,9 +23,8 @@ export default async function OrdersPage() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-8">
+      <div className="mb-8">
         <h1 className="font-display text-3xl font-bold">Orders</h1>
-        <QRScanner />
       </div>
 
       <Card>
@@ -44,6 +43,9 @@ export default async function OrdersPage() {
                     Customer
                   </th>
                   <th className="text-left py-3 px-4 text-sm font-semibold text-brand-platinum">
+                    Salesperson
+                  </th>
+                  <th className="text-left py-3 px-4 text-sm font-semibold text-brand-platinum">
                     Total
                   </th>
                   <th className="text-left py-3 px-4 text-sm font-semibold text-brand-platinum">
@@ -60,7 +62,7 @@ export default async function OrdersPage() {
               <tbody>
                 {orders.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="text-center py-8 text-brand-platinum">
+                    <td colSpan={7} className="text-center py-8 text-brand-platinum">
                       No orders found
                     </td>
                   </tr>
@@ -75,6 +77,11 @@ export default async function OrdersPage() {
                           <p className="font-medium">{order.lead?.full_name}</p>
                           <p className="text-sm text-brand-platinum">{order.lead?.email}</p>
                         </div>
+                      </td>
+                      <td className="py-3 px-4">
+                        <span className="text-sm">
+                          {order.salesperson || <span className="text-brand-platinum italic">Not assigned</span>}
+                        </span>
                       </td>
                       <td className="py-3 px-4 font-semibold">
                         ${Number(order.total_bows_price).toFixed(2)}
@@ -96,12 +103,13 @@ export default async function OrdersPage() {
                         {new Date(order.created_at).toLocaleDateString()}
                       </td>
                       <td className="py-3 px-4">
-                        <div className="flex gap-3">
+                        <div className="flex gap-3 items-center">
                           <Link
                             href={`/admin/orders/${order.id}`}
-                            className="text-blue-500 hover:underline text-sm font-medium"
+                            className="text-blue-500 hover:text-blue-400 transition-colors"
+                            title="Edit order"
                           >
-                            Edit
+                            <Pencil className="w-4 h-4" />
                           </Link>
                           <SendInvoiceButton
                             orderId={order.id}

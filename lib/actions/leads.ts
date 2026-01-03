@@ -13,7 +13,6 @@ export async function createLead(data: ContactFormData) {
         full_name: data.fullName,
         email: data.email,
         phone: data.phone,
-        event_type: data.eventType || null,
         event_date: data.eventDate || null,
         source: "bows_qr",
       })

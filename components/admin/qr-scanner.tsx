@@ -5,56 +5,75 @@ import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { QrCode, X, Camera } from "lucide-react";
-import { Html5QrcodeScanner } from "html5-qrcode";
+import { Html5Qrcode } from "html5-qrcode";
 
 export function QRScanner() {
   const [isOpen, setIsOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const scannerRef = useRef<Html5QrcodeScanner | null>(null);
+  const scannerRef = useRef<Html5Qrcode | null>(null);
   const router = useRouter();
 
   useEffect(() => {
-    if (isOpen && !scannerRef.current) {
-      const scanner = new Html5QrcodeScanner(
-        "qr-reader",
-        {
-          fps: 10,
-          qrbox: { width: 250, height: 250 },
-          aspectRatio: 1.0,
-        },
-        false
-      );
+    let isActive = true;
+    let html5QrCode: Html5Qrcode | null = null;
 
-      scanner.render(
-        (decodedText) => {
-          // QR code contains the reference number
-          console.log("QR Code detected:", decodedText);
+    if (isOpen) {
+      const startScanner = async () => {
+        try {
+          const scanner = new Html5Qrcode("qr-reader");
+          html5QrCode = scanner;
+          scannerRef.current = scanner;
 
-          // Extract reference number from URL or direct reference
-          let referenceNumber = decodedText;
+          await scanner.start(
+            { facingMode: "environment" },
+            {
+              fps: 10,
+              qrbox: { width: 250, height: 250 },
+              aspectRatio: 1.0,
+            },
+            (decodedText: string) => {
+              console.log("QR Code detected:", decodedText);
+              let referenceNumber = decodedText;
+              if (decodedText.includes("/booking/confirmation/")) {
+                const parts = decodedText.split("/");
+                referenceNumber = parts[parts.length - 1];
+              }
+              fetchOrderByReference(referenceNumber);
+            },
+            (errorMessage: string) => {
+              // Scanning errors are normal
+              console.debug("QR scan error:", errorMessage);
+            }
+          );
 
-          // If it's a URL, extract the reference number
-          if (decodedText.includes("/booking/confirmation/")) {
-            const parts = decodedText.split("/");
-            referenceNumber = parts[parts.length - 1];
+          if (!isActive) {
+            await scanner.stop();
+            scanner.clear();
           }
-
-          // Fetch order by reference number and redirect to edit page
-          fetchOrderByReference(referenceNumber);
-        },
-        (errorMessage) => {
-          // Scanning errors are normal, don't show them
-          console.debug("QR scan error:", errorMessage);
+        } catch (err: any) {
+          if (isActive) {
+            console.error("Failed to start scanner:", err);
+            setError("Failed to access camera. Please check permissions.");
+          }
         }
-      );
+      };
 
-      scannerRef.current = scanner;
+      startScanner();
     }
 
     return () => {
-      if (scannerRef.current) {
-        scannerRef.current.clear().catch(console.error);
-        scannerRef.current = null;
+      isActive = false;
+      if (html5QrCode) {
+        html5QrCode
+          .stop()
+          .then(() => {
+            html5QrCode?.clear();
+          })
+          .catch((err) => {
+            // Scanner might not have been running, which is fine
+            console.debug("Scanner stop error on cleanup:", err);
+            html5QrCode?.clear();
+          });
       }
     };
   }, [isOpen]);
@@ -71,15 +90,21 @@ export function QRScanner() {
       } else {
         setError("Order not found");
       }
-    } catch (err) {
+    } catch (err: any) {
       setError("Failed to fetch order");
       console.error(err);
     }
   };
 
-  const handleClose = () => {
+  const handleClose = async () => {
     if (scannerRef.current) {
-      scannerRef.current.clear().catch(console.error);
+      try {
+        await scannerRef.current.stop();
+        scannerRef.current.clear();
+      } catch (err) {
+        // Scanner might not have been running
+        console.debug("Scanner stop error on close:", err);
+      }
       scannerRef.current = null;
     }
     setIsOpen(false);
