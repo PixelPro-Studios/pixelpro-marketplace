@@ -37,9 +37,6 @@ export default async function LeadsPage() {
                     Phone
                   </th>
                   <th className="text-left py-3 px-4 text-sm font-semibold text-brand-platinum">
-                    Event Type
-                  </th>
-                  <th className="text-left py-3 px-4 text-sm font-semibold text-brand-platinum">
                     Date
                   </th>
                 </tr>
@@ -47,7 +44,7 @@ export default async function LeadsPage() {
               <tbody>
                 {leads.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="text-center py-8 text-brand-platinum">
+                    <td colSpan={4} className="text-center py-8 text-brand-platinum">
                       No leads found
                     </td>
                   </tr>
@@ -57,9 +54,6 @@ export default async function LeadsPage() {
                       <td className="py-3 px-4 font-medium">{lead.full_name}</td>
                       <td className="py-3 px-4">{lead.email}</td>
                       <td className="py-3 px-4">{lead.phone}</td>
-                      <td className="py-3 px-4 text-brand-platinum">
-                        {lead.event_type || "-"}
-                      </td>
                       <td className="py-3 px-4 text-sm text-brand-platinum">
                         {new Date(lead.created_at).toLocaleDateString()}
                       </td>

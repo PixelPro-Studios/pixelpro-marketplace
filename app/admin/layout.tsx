@@ -1,13 +1,12 @@
 import Link from "next/link";
 import { logout } from "@/lib/actions/auth";
 import { Button } from "@/components/ui/button";
-import { LayoutDashboard, Package, ShoppingCart, Users, List, LogOut } from "lucide-react";
+import { LayoutDashboard, Package, ShoppingCart, Users, List, LogOut, QrCode } from "lucide-react";
 
 const navigation = [
   { name: "Dashboard", href: "/admin", icon: LayoutDashboard },
-  { name: "All Entries", href: "/admin/entries", icon: List },
+    { name: "Scan QR Code", href: "/admin/scan", icon: QrCode },
   { name: "Orders", href: "/admin/orders", icon: ShoppingCart },
-  { name: "Services", href: "/admin/services", icon: Package },
   { name: "Leads", href: "/admin/leads", icon: Users },
 ];
 
@@ -19,10 +18,10 @@ export default function AdminLayout({
   return (
     <div className="min-h-screen flex">
       {/* Sidebar */}
-      <aside className="w-64 bg-brand-charcoal border-r border-brand-graphite">
+      <aside className="w-64 bg-brand-charcoal border-r border-brand-graphite flex flex-col">
         <div className="p-6">
           <h1 className="font-display text-xl font-bold mb-1">PixelPro Admin</h1>
-          <p className="text-sm text-brand-platinum">BOWS Event Management</p>
+          <p className="text-sm text-brand-platinum">Finance Manager</p>
         </div>
         <nav className="px-3 space-y-1">
           {navigation.map((item) => (
@@ -36,10 +35,9 @@ export default function AdminLayout({
             </Link>
           ))}
         </nav>
-        <div className="absolute bottom-0 w-64 p-3">
+        <div className="px-3 mt-4">
           <form action={logout}>
             <Button variant="secondary" className="w-full justify-start" type="submit">
-              <LogOut className="w-5 h-5 mr-3" />
               Logout
             </Button>
           </form>

@@ -2,6 +2,9 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { jsPDF } from "jspdf";
+import { Resend } from "resend";
+import fs from "fs";
+import path from "path";
 
 export async function sendInvoice(orderId: string) {
   try {
@@ -30,30 +33,53 @@ export async function sendInvoice(orderId: string) {
     // Generate PDF invoice
     const pdfBuffer = await generateInvoicePDF(order);
 
-    // In a production environment, you would:
-    // 1. Upload PDF to storage (Supabase Storage or S3)
-    // 2. Send email with PDF attachment using a service like Resend, SendGrid, etc.
+    // Initialize Resend
+    const resend = new Resend(process.env.RESEND_API_KEY);
 
-    // For now, we'll simulate the email sending
-    console.log("Invoice generated for:", order.reference_number);
-    console.log("Would send to:", order.lead.email);
+    // Send email with PDF attachment
+    const { data: emailData, error: emailError } = await resend.emails.send({
+      from: "PixelPro Studios <billing@pixelprostudios.sg>", // Change to your verified domain
+      to: order.lead.email,
+      subject: `Invoice for Order ${order.reference_number}`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #333;">Invoice from PixelPro Studios</h2>
+          <p>Dear ${order.lead.full_name},</p>
+          <p>Thank you for your order! Please find your invoice attached.</p>
 
-    // TODO: Implement actual email sending
-    // Example with Resend:
-    // await resend.emails.send({
-    //   from: 'noreply@pixelprostudios.com',
-    //   to: order.lead.email,
-    //   subject: `Invoice for Order ${order.reference_number}`,
-    //   attachments: [{
-    //     filename: `invoice-${order.reference_number}.pdf`,
-    //     content: pdfBuffer
-    //   }]
-    // });
+          <div style="background: #f5f5f5; padding: 20px; margin: 20px 0; border-radius: 8px;">
+            <h3 style="margin-top: 0;">Order Details</h3>
+            <p><strong>Invoice Number:</strong> ${order.reference_number}</p>
+            <p><strong>Total Amount:</strong> $${order.total_bows_price.toFixed(2)}</p>
+            <p><strong>Status:</strong> ${order.status.replace("_", " ").toUpperCase()}</p>
+          </div>
 
+          <p>If you have any questions, please don't hesitate to contact us.</p>
+
+          <p style="margin-top: 30px;">
+            Best regards,<br/>
+            <strong>PixelPro Studios</strong><br/>
+          </p>
+        </div>
+      `,
+      attachments: [
+        {
+          filename: `invoice-${order.reference_number}.pdf`,
+          content: pdfBuffer,
+        },
+      ],
+    });
+
+    if (emailError) {
+      console.error("Error sending email:", emailError);
+      return { success: false, error: "Failed to send invoice email" };
+    }
+
+    console.log("Invoice sent successfully:", emailData);
     return {
       success: true,
       message: `Invoice sent to ${order.lead.email}`,
-      reference: order.reference_number
+      reference: order.reference_number,
     };
   } catch (error) {
     console.error("Error sending invoice:", error);
@@ -64,19 +90,29 @@ export async function sendInvoice(orderId: string) {
 async function generateInvoicePDF(order: any): Promise<Buffer> {
   const doc = new jsPDF();
 
-  // Company Header
-  doc.setFontSize(20);
-  doc.setFont("helvetica", "bold");
-  doc.text("PixelPro Studios", 20, 20);
+  // Add Company Logo
+  try {
+    const logoPath = path.join(process.cwd(), "public/pixelpro-studios-logo.png");
+    const logoBase64 = fs.readFileSync(logoPath).toString("base64");
+    doc.addImage(logoBase64, "PNG", 20, 10, 20, 20);
+    
+    // Add Company Name next to logo
+    doc.setFontSize(20);
+    doc.setFont("helvetica", "bold");
+    doc.text("PixelPro Studios", 45, 25);
+  } catch (error) {
+    console.error("Failed to add logo to PDF:", error);
+    // Fallback to text if logo fails to load
+    doc.setFontSize(20);
+    doc.setFont("helvetica", "bold");
+    doc.text("PixelPro Studios", 20, 20);
+  }
 
-  doc.setFontSize(10);
-  doc.setFont("helvetica", "normal");
-  doc.text("BOWS Event Booking System", 20, 27);
 
   // Invoice Title
   doc.setFontSize(16);
   doc.setFont("helvetica", "bold");
-  doc.text("INVOICE", 150, 20);
+  doc.text("INVOICE", 150, 18);
 
   // Order Information
   doc.setFontSize(10);
@@ -99,28 +135,25 @@ async function generateInvoicePDF(order: any): Promise<Buffer> {
   if (order.lead.event_date) {
     doc.text(`Event Date: ${new Date(order.lead.event_date).toLocaleDateString()}`, 20, 78);
   }
-  if (order.lead.event_type) {
-    doc.text(`Event Type: ${order.lead.event_type}`, 20, 85);
-  }
 
   // Line separator
   doc.setLineWidth(0.5);
-  doc.line(20, 95, 190, 95);
+  doc.line(20, 85, 190, 85);
 
   // Table Header
   doc.setFontSize(10);
   doc.setFont("helvetica", "bold");
-  doc.text("Service", 20, 105);
-  doc.text("Qty", 120, 105);
-  doc.text("Price", 145, 105);
-  doc.text("Total", 170, 105);
+  doc.text("Service", 20, 95);
+  doc.text("Qty", 120, 95);
+  doc.text("Price", 145, 95);
+  doc.text("Total", 170, 95);
 
   doc.setLineWidth(0.3);
-  doc.line(20, 108, 190, 108);
+  doc.line(20, 98, 190, 98);
 
   // Table Items
   doc.setFont("helvetica", "normal");
-  let yPosition = 118;
+  let yPosition = 108;
 
   order.order_items.forEach((item: any) => {
     const serviceName = item.service.name;
@@ -169,7 +202,7 @@ async function generateInvoicePDF(order: any): Promise<Buffer> {
   doc.setTextColor(100, 100, 100);
   const footerY = 270;
   doc.text("Thank you for your business!", 105, footerY, { align: "center" });
-  doc.text("PixelPro Studios - BOWS Event Booking", 105, footerY + 5, { align: "center" });
+  doc.text("PixelPro Studios @ BOWS", 105, footerY + 5, { align: "center" });
 
   if (order.lead.additional_notes) {
     doc.setFontSize(8);

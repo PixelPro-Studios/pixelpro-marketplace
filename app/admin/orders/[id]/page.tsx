@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { notFound, redirect } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { OrderEditForm } from "@/components/admin/order-edit-form";
+import { OrderEditActions } from "@/components/admin/order-edit-actions";
 
 async function getOrder(id: string) {
   const supabase = await createClient();
@@ -57,12 +58,13 @@ export default async function OrderEditPage({
             Reference: <span className="font-mono font-semibold">{order.reference_number}</span>
           </p>
         </div>
+        <OrderEditActions orderId={order.id} />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Order Edit Form */}
         <div className="lg:col-span-2">
-          <OrderEditForm order={order} services={services} />
+          <OrderEditForm order={order} services={services} showButtons={false} />
         </div>
 
         {/* Customer Information */}
@@ -89,10 +91,6 @@ export default async function OrderEditPage({
                 <p className="font-medium">
                   {new Date(order.lead.event_date).toLocaleDateString()}
                 </p>
-              </div>
-              <div>
-                <p className="text-sm text-brand-platinum mb-1">Event Type</p>
-                <p className="font-medium capitalize">{order.lead.event_type}</p>
               </div>
               {order.lead.additional_notes && (
                 <div>

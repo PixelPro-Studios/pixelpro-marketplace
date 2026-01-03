@@ -16,7 +16,6 @@ const contactSchema = z.object({
   fullName: z.string().min(2, "Name must be at least 2 characters"),
   email: z.string().email("Invalid email address"),
   phone: z.string().min(8, "Phone number must be 8 digits"),
-  eventType: z.string().optional(),
   eventDate: z.string().optional(),
 });
 
@@ -92,14 +91,6 @@ export default function ContactPage() {
               placeholder="9123 4567"
               error={errors.phone?.message}
               {...register("phone")}
-            />
-
-            <Input
-              id="eventType"
-              label="Event Type (Optional)"
-              placeholder="Wedding, Birthday, Corporate Event, etc."
-              error={errors.eventType?.message}
-              {...register("eventType")}
             />
 
             <Input

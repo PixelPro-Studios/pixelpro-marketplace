@@ -8,13 +8,14 @@ Admins can now fully edit and manage orders through a comprehensive order amendm
 
 ### 1. QR Code Scanner
 
-**Location**: `/admin/orders` page - "Scan QR Code" button in top-right
+**Location**: Left navigation menu - "Scan QR Code" menu item (accessible at `/admin/scan`)
 
 **How It Works**:
-- Click "Scan QR Code" button
-- Camera view opens in modal
+- Click "Scan QR Code" in the left sidebar
+- Full-page camera scanner opens
+- Allow camera access when prompted
 - Point camera at order confirmation QR code
-- Order automatically opens in edit mode
+- Order automatically opens in edit mode when detected
 - Fast access for cashier payments
 
 **Use Cases**:
@@ -116,16 +117,20 @@ Track order changes:
 1. **Customer Arrives at Cashier**
    - Customer shows QR code on phone/printout
 
-2. **Scan QR Code**
+2. **Navigate to Scanner**
    ```
-   Admin Dashboard → Orders → "Scan QR Code"
+   Admin Dashboard → Scan QR Code (sidebar)
    ```
 
-3. **Camera Opens**
+3. **Allow Camera Access**
+   - Browser will request camera permission
+   - Allow access to use the scanner
+
+4. **Scan QR Code**
    - Point camera at QR code
-   - System auto-detects and opens order
+   - System auto-detects and redirects to order
 
-4. **Edit & Process**
+5. **Edit & Process**
    - Adjust price if needed
    - Update status to "paid"
    - Save changes
@@ -161,13 +166,14 @@ Track order changes:
 
 ### Files Created
 
-**QR Scanner Component**:
-- [`components/admin/qr-scanner.tsx`](components/admin/qr-scanner.tsx)
-  - Client component with camera access
-  - Uses html5-qrcode library
+**QR Scanner Page**:
+- [`app/admin/scan/page.tsx`](app/admin/scan/page.tsx)
+  - Full-page QR scanner with camera access
+  - Client component using html5-qrcode library
   - Auto-detects QR codes
-  - Extracts reference number
-  - Redirects to order edit page
+  - Extracts reference number from QR or URL
+  - Real-time success/error feedback
+  - Redirects to order edit page automatically
 
 **API Route**:
 - [`app/api/orders/by-reference/[reference]/route.ts`](app/api/orders/by-reference/[reference]/route.ts)
@@ -192,11 +198,15 @@ Track order changes:
 
 ### Files Modified
 
+**Admin Layout**:
+- [`app/admin/layout.tsx`](app/admin/layout.tsx)
+  - Added "Scan QR Code" menu item to sidebar navigation
+
 **Orders List**:
 - [`app/admin/orders/page.tsx`](app/admin/orders/page.tsx)
-  - Added "Edit" link to actions column
-  - **Added QR Scanner button**
-  - **Replaced View button with Send Invoice button**
+  - Changed "Edit" text to pencil icon
+  - Changed "Send Invoice" button to mail icon
+  - Icon-only actions for cleaner UI
 
 **Server Actions**:
 - [`lib/actions/orders.ts`](lib/actions/orders.ts)

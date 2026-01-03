@@ -95,9 +95,6 @@ export default async function ConfirmationPage({
             <p className="font-medium">{order.lead.full_name}</p>
             <p className="text-brand-platinum">{order.lead.email}</p>
             <p className="text-brand-platinum">{order.lead.phone}</p>
-            {order.lead.event_type && (
-              <p className="text-brand-platinum mt-2">Event: {order.lead.event_type}</p>
-            )}
           </div>
         </CardContent>
       </Card>

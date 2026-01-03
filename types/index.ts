@@ -22,7 +22,6 @@ export interface Lead {
   full_name: string;
   email: string;
   phone: string;
-  event_type?: string;
   event_date?: string;
   source: string;
   created_at: string;
@@ -32,6 +31,7 @@ export interface Order {
   id: string;
   lead_id: string;
   reference_number: string;
+  salesperson?: string | null;
   total_original_price: number;
   total_bows_price: number;
   total_savings: number;
@@ -79,7 +79,6 @@ export interface ContactFormData {
   fullName: string;
   email: string;
   phone: string;
-  eventType?: string;
   eventDate?: string;
 }
 

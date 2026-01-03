@@ -16,8 +16,13 @@ const montserrat = Montserrat({
 });
 
 export const metadata: Metadata = {
-  title: "PixelPro Studios - BOWS Event Booking",
+  title: "PixelPro Studios Marketplace",
   description: "Browse and book photobooth and videography services for your event",
+  icons: {
+    icon: "/favicon.ico",
+    shortcut: "/favicon.ico",
+    apple: "/favicon.ico",
+  },
 };
 
 export default function RootLayout({

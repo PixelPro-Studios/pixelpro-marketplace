@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -24,6 +24,7 @@ interface Order {
   id: string;
   reference_number: string;
   status: string;
+  salesperson: string | null;
   total_original_price: number;
   total_bows_price: number;
   total_savings: number;
@@ -40,16 +41,41 @@ interface Service {
 interface OrderEditFormProps {
   order: Order;
   services: Service[];
+  showButtons?: boolean;
 }
 
-export function OrderEditForm({ order, services }: OrderEditFormProps) {
+const SALESPEOPLE = [
+  'Caleb',
+  'Deanna',
+  'Jia Ni',
+  'Jia Yao',
+  'Karen',
+  'Jovin',
+  'Zi Qi',
+  'Lukas'
+];
+
+export function OrderEditForm({ order, services, showButtons = true }: OrderEditFormProps) {
   const router = useRouter();
   const [status, setStatus] = useState(order.status);
+  const [salesperson, setSalesperson] = useState(order.salesperson || '');
   const [items, setItems] = useState(order.order_items);
   const [customBowsPrice, setCustomBowsPrice] = useState<number | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+
+  // Listen for submit event from external button
+  useEffect(() => {
+    const handleExternalSubmit = () => {
+      handleSubmit();
+    };
+
+    window.addEventListener("orderEditSubmit", handleExternalSubmit);
+    return () => {
+      window.removeEventListener("orderEditSubmit", handleExternalSubmit);
+    };
+  }, [status, salesperson, items, customBowsPrice]); // Re-create listener when form data changes
 
   // Calculate totals
   const calculateTotals = (orderItems: OrderItem[]) => {
@@ -132,6 +158,7 @@ export function OrderEditForm({ order, services }: OrderEditFormProps) {
     try {
       const result = await updateOrder(order.id, {
         status,
+        salesperson: salesperson || null,
         items: items.map((item) => ({
           id: item.id.startsWith("temp-") ? undefined : item.id,
           service_id: item.service_id,
@@ -163,10 +190,10 @@ export function OrderEditForm({ order, services }: OrderEditFormProps) {
       {/* Order Status */}
       <Card>
         <CardHeader>
-          <CardTitle>Order Status</CardTitle>
+          <CardTitle>Order Information</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium mb-2">Status</label>
               <select
@@ -177,6 +204,21 @@ export function OrderEditForm({ order, services }: OrderEditFormProps) {
                 <option value="pending_payment">Pending Payment</option>
                 <option value="paid">Paid</option>
                 <option value="cancelled">Cancelled</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-2">Salesperson</label>
+              <select
+                value={salesperson}
+                onChange={(e) => setSalesperson(e.target.value)}
+                className="w-full px-4 py-2 bg-brand-charcoal border border-brand-graphite rounded-lg focus:outline-none focus:border-brand-off-white"
+              >
+                <option value="">Select salesperson...</option>
+                {SALESPEOPLE.map((person) => (
+                  <option key={person} value={person}>
+                    {person}
+                  </option>
+                ))}
               </select>
             </div>
           </div>
@@ -365,32 +407,34 @@ export function OrderEditForm({ order, services }: OrderEditFormProps) {
       )}
 
       {/* Action Buttons */}
-      <div className="flex gap-4">
-        <Button
-          onClick={handleSubmit}
-          disabled={isSubmitting}
-          className="flex-1"
-          size="lg"
-        >
-          {isSubmitting ? (
-            "Saving..."
-          ) : (
-            <>
-              <Save className="w-4 h-4 mr-2" />
-              Save Changes
-            </>
-          )}
-        </Button>
-        <Button
-          variant="secondary"
-          onClick={() => router.push("/admin/orders")}
-          disabled={isSubmitting}
-          size="lg"
-        >
-          <X className="w-4 h-4 mr-2" />
-          Cancel
-        </Button>
-      </div>
+      {showButtons && (
+        <div className="flex gap-4">
+          <Button
+            onClick={handleSubmit}
+            disabled={isSubmitting}
+            className="flex-1"
+            size="lg"
+          >
+            {isSubmitting ? (
+              "Saving..."
+            ) : (
+              <>
+                <Save className="w-4 h-4 mr-2" />
+                Save Changes
+              </>
+            )}
+          </Button>
+          <Button
+            variant="secondary"
+            onClick={() => router.push("/admin/orders")}
+            disabled={isSubmitting}
+            size="lg"
+          >
+            <X className="w-4 h-4 mr-2" />
+            Cancel
+          </Button>
+        </div>
+      )}
     </div>
   );
 }

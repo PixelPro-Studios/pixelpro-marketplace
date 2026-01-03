@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
 import { Mail } from "lucide-react";
 import { sendInvoice } from "@/lib/actions/invoices";
 
@@ -36,29 +35,18 @@ export function SendInvoiceButton({ orderId, referenceNumber }: SendInvoiceButto
 
   return (
     <div className="relative">
-      <Button
-        variant="secondary"
-        size="sm"
+      <button
         onClick={handleSendInvoice}
         disabled={isLoading}
-        className="text-sm"
+        className="text-green-500 hover:text-green-400 transition-colors disabled:opacity-50"
+        title="Send invoice email"
       >
-        {isLoading ? (
-          <>
-            <Mail className="w-4 h-4 mr-1 animate-pulse" />
-            Sending...
-          </>
-        ) : (
-          <>
-            <Mail className="w-4 h-4 mr-1" />
-            Send Invoice
-          </>
-        )}
-      </Button>
+        <Mail className={`w-4 h-4 ${isLoading ? 'animate-pulse' : ''}`} />
+      </button>
 
       {message && (
         <div
-          className={`absolute top-full mt-2 left-0 z-10 px-3 py-1 rounded text-xs whitespace-nowrap ${
+          className={`absolute top-full mt-2 right-0 z-10 px-3 py-1 rounded text-xs whitespace-nowrap ${
             message.type === "success"
               ? "bg-green-600 text-white"
               : "bg-red-600 text-white"

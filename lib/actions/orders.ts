@@ -170,6 +170,7 @@ export async function updateOrderStatus(orderId: string, status: string) {
 
 interface UpdateOrderData {
   status: string;
+  salesperson: string | null;
   items: Array<{
     id?: string;
     service_id: string;
@@ -190,6 +191,7 @@ export async function updateOrder(orderId: string, data: UpdateOrderData) {
       .from("orders")
       .update({
         status: data.status,
+        salesperson: data.salesperson,
         total_original_price: data.total_original_price,
         total_bows_price: data.total_bows_price,
         total_savings: data.total_savings,

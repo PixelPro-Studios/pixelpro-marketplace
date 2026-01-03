@@ -1,6 +1,8 @@
 import { createClient } from "@/lib/supabase/server";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ShoppingCart, Users, Package, TrendingUp } from "lucide-react";
+import { SalespersonPieChart } from "@/components/admin/salesperson-pie-chart";
+import { HourlySalesChart } from "@/components/admin/hourly-sales-chart";
 
 async function getDashboardStats() {
   const supabase = await createClient();
@@ -24,10 +26,51 @@ async function getDashboardStats() {
   // Get total revenue (from paid orders)
   const { data: paidOrders } = await supabase
     .from("orders")
-    .select("total_bows_price")
+    .select("total_bows_price, salesperson, created_at")
     .eq("status", "paid");
 
   const totalRevenue = paidOrders?.reduce((sum, order) => sum + Number(order.total_bows_price), 0) || 0;
+
+  // Calculate sales by salesperson
+  const salesBySalesperson: Record<string, { sales: number; revenue: number }> = {};
+
+  paidOrders?.forEach((order) => {
+    const salesperson = order.salesperson || "Unassigned";
+    if (!salesBySalesperson[salesperson]) {
+      salesBySalesperson[salesperson] = { sales: 0, revenue: 0 };
+    }
+    salesBySalesperson[salesperson].sales += 1;
+    salesBySalesperson[salesperson].revenue += Number(order.total_bows_price);
+  });
+
+  const salespersonData = Object.entries(salesBySalesperson).map(([name, data]) => ({
+    name,
+    value: data.revenue,
+    sales: data.sales,
+  }));
+
+  // Calculate sales by hour
+  const salesByHour: Record<string, { sales: number; revenue: number }> = {};
+
+  paidOrders?.forEach((order) => {
+    const hour = new Date(order.created_at).getHours();
+    const hourLabel = `${hour.toString().padStart(2, '0')}:00`;
+    if (!salesByHour[hourLabel]) {
+      salesByHour[hourLabel] = { sales: 0, revenue: 0 };
+    }
+    salesByHour[hourLabel].sales += 1;
+    salesByHour[hourLabel].revenue += Number(order.total_bows_price);
+  });
+
+  // Create array for all 24 hours
+  const hourlyData = Array.from({ length: 24 }, (_, i) => {
+    const hourLabel = `${i.toString().padStart(2, '0')}:00`;
+    return {
+      hour: hourLabel,
+      sales: salesByHour[hourLabel]?.revenue || 0,
+      orders: salesByHour[hourLabel]?.sales || 0,
+    };
+  });
 
   // Get recent orders
   const { data: recentOrders } = await supabase
@@ -45,6 +88,8 @@ async function getDashboardStats() {
     activeServices: activeServices || 0,
     totalRevenue,
     recentOrders: recentOrders || [],
+    salespersonData,
+    hourlyData,
   };
 }
 
@@ -102,6 +147,27 @@ export default async function AdminDashboard() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">${stats.totalRevenue.toFixed(2)}</div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Charts Grid */}
+      <div className="grid grid-cols-2 gap-6 mb-8">
+        <Card>
+          <CardHeader>
+            <CardTitle>Sales by Salesperson</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <SalespersonPieChart data={stats.salespersonData} />
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Sales by Hour</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <HourlySalesChart data={stats.hourlyData} />
           </CardContent>
         </Card>
       </div>
