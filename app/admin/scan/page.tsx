@@ -53,10 +53,12 @@ export default function ScanPage() {
 
     return () => {
       isActive = false;
-      if (scanner) {
+      // Only stop if this specific instance is still the active one in the ref
+      if (scanner && scannerRef.current === scanner) {
+        scannerRef.current = null;
         scanner.stop()
           .then(() => scanner?.clear())
-          .catch((err) => console.debug("Scanner cleanup error:", err));
+          .catch((err) => console.debug("Scanner cleanup error (safe):", err));
       }
     };
   }, []);
@@ -85,8 +87,18 @@ export default function ScanPage() {
           setSuccess(`Order ${referenceNumber} found! Redirecting...`);
           setError(null);
 
-          // Stop scanning
-          scanner.stop().catch(console.error);
+          // Stop scanning - only if it's the active scanner
+          if (scannerRef.current === scanner) {
+            // Clear ref immediately to act as a lock
+            scannerRef.current = null;
+            scanner.stop()
+              .then(() => {
+                scanner.clear();
+              })
+              .catch((err) => {
+                console.debug("Scanner stop error on success (safe):", err);
+              });
+          }
           setIsScanning(false);
 
           // Fetch order by reference number and redirect to edit page
@@ -109,9 +121,19 @@ export default function ScanPage() {
 
     try {
       // Stop current scanning
-      if (isScanning) {
-        await scannerRef.current.stop();
-        setIsScanning(false);
+      if (isScanning && scannerRef.current) {
+        const scanner = scannerRef.current;
+        scannerRef.current = null; // Clear ref first to prevent double-stop
+        
+        try {
+          await scanner.stop();
+          scanner.clear();
+        } catch (err) {
+          // Scanner might not have been running, which is fine
+          console.debug("Scanner stop error on close:", err); // Changed message
+        } finally {
+          setIsScanning(false);
+        }
       }
 
       // Switch to next camera
@@ -119,7 +141,9 @@ export default function ScanPage() {
       setCurrentCameraIndex(nextIndex);
 
       // Start scanning with new camera
-      await startScanning(scannerRef.current, cameras[nextIndex].id);
+      const scanner = scannerRef.current || new Html5Qrcode("qr-reader");
+      scannerRef.current = scanner;
+      await startScanning(scanner, cameras[nextIndex].id);
     } catch (err) {
       console.error("Error switching camera:", err);
       setError("Failed to switch camera");

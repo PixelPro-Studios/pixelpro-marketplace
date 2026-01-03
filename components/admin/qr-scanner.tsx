@@ -39,6 +39,20 @@ export function QRScanner() {
                 referenceNumber = parts[parts.length - 1];
               }
               fetchOrderByReference(referenceNumber);
+              
+              // Stop scanning on success - only if it's the active scanner
+              if (scannerRef.current === scanner) {
+                // Clear ref immediately to act as a lock and prevent double-stop
+                scannerRef.current = null; 
+                scanner.stop()
+                  .then(() => {
+                    scanner.clear();
+                  })
+                  .catch(err => {
+                    // This error is expected if the scanner was already stopped by cleanup
+                    console.debug("Scanner stop error on success (safe):", err);
+                  });
+              }
             },
             (errorMessage: string) => {
               // Scanning errors are normal
@@ -47,8 +61,11 @@ export function QRScanner() {
           );
 
           if (!isActive) {
-            await scanner.stop();
-            scanner.clear();
+            if (scannerRef.current === scanner) {
+              scannerRef.current = null;
+              await scanner.stop();
+              scanner.clear();
+            }
           }
         } catch (err: any) {
           if (isActive) {
@@ -63,15 +80,16 @@ export function QRScanner() {
 
     return () => {
       isActive = false;
-      if (html5QrCode) {
+      // Only stop if this specific instance is still the active one in the ref
+      if (html5QrCode && scannerRef.current === html5QrCode) {
+        scannerRef.current = null;
         html5QrCode
           .stop()
           .then(() => {
             html5QrCode?.clear();
           })
           .catch((err) => {
-            // Scanner might not have been running, which is fine
-            console.debug("Scanner stop error on cleanup:", err);
+            console.debug("Scanner stop error on cleanup (safe):", err);
             html5QrCode?.clear();
           });
       }
@@ -98,14 +116,16 @@ export function QRScanner() {
 
   const handleClose = async () => {
     if (scannerRef.current) {
+      const scanner = scannerRef.current;
+      scannerRef.current = null; // Clear ref first to prevent double-stop
+      
       try {
-        await scannerRef.current.stop();
-        scannerRef.current.clear();
+        await scanner.stop();
+        scanner.clear();
       } catch (err) {
-        // Scanner might not have been running
+        // Scanner might not have been running, which is fine
         console.debug("Scanner stop error on close:", err);
       }
-      scannerRef.current = null;
     }
     setIsOpen(false);
     setError(null);
