@@ -42,7 +42,7 @@ export default function LoginPage() {
         <CardHeader>
           <CardTitle className="text-center">Admin Login</CardTitle>
           <CardDescription className="text-center">
-            PixelPro Studios - BOWS Event Management
+            PixelPro Studios 
           </CardDescription>
         </CardHeader>
         <CardContent>

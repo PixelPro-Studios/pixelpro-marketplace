@@ -21,7 +21,7 @@ export default function AdminLayout({
       <aside className="w-64 bg-brand-charcoal border-r border-brand-graphite flex flex-col">
         <div className="p-6">
           <h1 className="font-display text-xl font-bold mb-1">PixelPro Admin</h1>
-          <p className="text-sm text-brand-platinum">BOWS Event Management</p>
+          <p className="text-sm text-brand-platinum">Finance Manager</p>
         </div>
         <nav className="px-3 space-y-1">
           {navigation.map((item) => (

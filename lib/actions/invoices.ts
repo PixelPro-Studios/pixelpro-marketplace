@@ -3,6 +3,8 @@
 import { createClient } from "@/lib/supabase/server";
 import { jsPDF } from "jspdf";
 import { Resend } from "resend";
+import fs from "fs";
+import path from "path";
 
 export async function sendInvoice(orderId: string) {
   try {
@@ -88,14 +90,24 @@ export async function sendInvoice(orderId: string) {
 async function generateInvoicePDF(order: any): Promise<Buffer> {
   const doc = new jsPDF();
 
-  // Company Header
-  doc.setFontSize(20);
-  doc.setFont("helvetica", "bold");
-  doc.text("PixelPro Studios", 20, 18);
+  // Add Company Logo
+  try {
+    const logoPath = path.join(process.cwd(), "public/pixelpro-studios-logo.png");
+    const logoBase64 = fs.readFileSync(logoPath).toString("base64");
+    doc.addImage(logoBase64, "PNG", 20, 10, 20, 20);
+    
+    // Add Company Name next to logo
+    doc.setFontSize(20);
+    doc.setFont("helvetica", "bold");
+    doc.text("PixelPro Studios", 45, 25);
+  } catch (error) {
+    console.error("Failed to add logo to PDF:", error);
+    // Fallback to text if logo fails to load
+    doc.setFontSize(20);
+    doc.setFont("helvetica", "bold");
+    doc.text("PixelPro Studios", 20, 20);
+  }
 
-  doc.setFontSize(10);
-  doc.setFont("helvetica", "normal");
-  doc.text("BOWS Event Booking", 20, 24);
 
   // Invoice Title
   doc.setFontSize(16);
@@ -190,7 +202,7 @@ async function generateInvoicePDF(order: any): Promise<Buffer> {
   doc.setTextColor(100, 100, 100);
   const footerY = 270;
   doc.text("Thank you for your business!", 105, footerY, { align: "center" });
-  doc.text("PixelPro Studios - BOWS Event Booking", 105, footerY + 5, { align: "center" });
+  doc.text("PixelPro Studios @ BOWS", 105, footerY + 5, { align: "center" });
 
   if (order.lead.additional_notes) {
     doc.setFontSize(8);

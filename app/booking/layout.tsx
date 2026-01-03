@@ -8,7 +8,7 @@ export default function BookingLayout({
       <div className="max-w-4xl mx-auto">
         <div className="text-center mb-8">
           <h1 className="font-display text-3xl font-bold mb-2">PixelPro Studios</h1>
-          <p className="text-brand-platinum">BOWS Event Booking</p>
+          <p className="text-brand-platinum">BOWS Wedding Event Booking</p>
         </div>
         {children}
       </div>
