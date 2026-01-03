@@ -1,6 +1,6 @@
 "use client";
 
-import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from "recharts";
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from "recharts";
 
 interface SalespersonData {
   name: string;
@@ -12,22 +12,13 @@ interface SalespersonPieChartProps {
   data: SalespersonData[];
 }
 
-const COLORS = [
-  "#3b82f6", // blue
-  "#10b981", // green
-  "#f59e0b", // amber
-  "#ef4444", // red
-  "#8b5cf6", // violet
-  "#ec4899", // pink
-  "#06b6d4", // cyan
-  "#f97316", // orange
-];
+const COLORS = ["#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6", "#ec4899"];
 
 export function SalespersonPieChart({ data }: SalespersonPieChartProps) {
   if (!data || data.length === 0) {
     return (
       <div className="h-[300px] flex items-center justify-center text-brand-platinum">
-        No sales data available
+        No salesperson data available
       </div>
     );
   }
@@ -36,13 +27,12 @@ export function SalespersonPieChart({ data }: SalespersonPieChartProps) {
     <ResponsiveContainer width="100%" height={300}>
       <PieChart>
         <Pie
-          data={data}
+          data={data as any[]}
           cx="50%"
           cy="50%"
-          labelLine={false}
-          label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+          innerRadius={60}
           outerRadius={80}
-          fill="#8884d8"
+          paddingAngle={5}
           dataKey="value"
         >
           {data.map((entry, index) => (
@@ -50,17 +40,14 @@ export function SalespersonPieChart({ data }: SalespersonPieChartProps) {
           ))}
         </Pie>
         <Tooltip
-          formatter={(value: number, name: string, props: any) => [
-            `$${value.toFixed(2)} (${props.payload.sales} orders)`,
-            props.payload.name,
-          ]}
+          formatter={(value: any) => {
+            const val = typeof value === "number" ? value : 0;
+            return [`$${val.toFixed(2)}`, "Revenue"];
+          }}
           contentStyle={{
             backgroundColor: "#1a1a1a",
             border: "1px solid #333",
             borderRadius: "8px",
-            color: "#e5e5e5",
-          }}
-          labelStyle={{
             color: "#e5e5e5",
           }}
         />

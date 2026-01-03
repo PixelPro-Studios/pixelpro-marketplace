@@ -36,12 +36,13 @@ export function HourlySalesChart({ data }: HourlySalesChartProps) {
           tickFormatter={(value) => `$${value}`}
         />
         <Tooltip
-          formatter={(value: number, name: string, props: any) => {
-            if (name === "sales") {
-              return [`$${value.toFixed(2)}`, "Sales"];
+          formatter={((value: any, name: any) => {
+            if (name === "Sales ($)" || name === "sales") {
+              const numValue = Number(value) || 0;
+              return [`$${numValue.toFixed(2)}`, "Sales"];
             }
             return [value, "Orders"];
-          }}
+          }) as any}
           contentStyle={{
             backgroundColor: "#1a1a1a",
             border: "1px solid #333",
@@ -60,6 +61,14 @@ export function HourlySalesChart({ data }: HourlySalesChartProps) {
           strokeWidth={2}
           dot={{ fill: '#3b82f6' }}
           name="Sales ($)"
+        />
+        <Line
+          type="monotone"
+          dataKey="orders"
+          stroke="#10b981"
+          strokeWidth={2}
+          dot={{ fill: '#10b981' }}
+          name="Orders"
         />
       </LineChart>
     </ResponsiveContainer>

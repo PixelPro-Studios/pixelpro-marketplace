@@ -152,7 +152,7 @@ export default async function AdminDashboard() {
       </div>
 
       {/* Charts Grid */}
-      <div className="grid grid-cols-2 gap-6 mb-8">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
         <Card>
           <CardHeader>
             <CardTitle>Sales by Salesperson</CardTitle>
@@ -216,3 +216,4 @@ export default async function AdminDashboard() {
     </div>
   );
 }
+
