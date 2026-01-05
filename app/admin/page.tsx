@@ -1,8 +1,9 @@
 import { createClient } from "@/lib/supabase/server";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ShoppingCart, Users, Package, TrendingUp } from "lucide-react";
-import { SalespersonPieChart } from "@/components/admin/salesperson-pie-chart";
+import { ShoppingCart, Users, DollarSign, TrendingUp } from "lucide-react";
+import { SalespersonLeaderboard } from "@/components/admin/salesperson-leaderboard";
 import { HourlySalesChart } from "@/components/admin/hourly-sales-chart";
+import { toSingaporeTime } from "@/lib/utils/timezone";
 
 async function getDashboardStats() {
   const supabase = await createClient();
@@ -17,19 +18,24 @@ async function getDashboardStats() {
     .from("leads")
     .select("*", { count: "exact", head: true });
 
-  // Get active services
-  const { count: activeServices } = await supabase
-    .from("services")
-    .select("*", { count: "exact", head: true })
-    .eq("is_active", true);
-
-  // Get total revenue (from paid orders)
-  const { data: paidOrders } = await supabase
+  // Get all orders for calculations
+  const { data: allOrders } = await supabase
     .from("orders")
-    .select("total_bows_price, salesperson, created_at")
-    .eq("status", "paid");
+    .select("total_bows_price, deposit_amount, salesperson, created_at, status");
 
-  const totalRevenue = paidOrders?.reduce((sum, order) => sum + Number(order.total_bows_price), 0) || 0;
+  // Calculate total deposit collected (from all orders)
+  const totalDepositCollected = allOrders?.reduce((sum, order) => sum + Number(order.deposit_amount || 0), 0) || 0;
+
+  // Calculate total estimated revenue (total_bows_price from all non-cancelled orders)
+  const totalEstimatedRevenue = allOrders?.reduce((sum, order) => {
+    if (order.status !== 'cancelled') {
+      return sum + Number(order.total_bows_price);
+    }
+    return sum;
+  }, 0) || 0;
+
+  // Get paid orders for charts
+  const paidOrders = allOrders?.filter(order => order.status === "paid") || [];
 
   // Calculate sales by salesperson
   const salesBySalesperson: Record<string, { sales: number; revenue: number }> = {};
@@ -49,11 +55,12 @@ async function getDashboardStats() {
     sales: data.sales,
   }));
 
-  // Calculate sales by hour
+  // Calculate sales by hour (Singapore time)
   const salesByHour: Record<string, { sales: number; revenue: number }> = {};
 
   paidOrders?.forEach((order) => {
-    const hour = new Date(order.created_at).getHours();
+    const sgTime = toSingaporeTime(order.created_at);
+    const hour = sgTime.getHours();
     const hourLabel = `${hour.toString().padStart(2, '0')}:00`;
     if (!salesByHour[hourLabel]) {
       salesByHour[hourLabel] = { sales: 0, revenue: 0 };
@@ -85,8 +92,8 @@ async function getDashboardStats() {
   return {
     totalOrders: totalOrders || 0,
     totalLeads: totalLeads || 0,
-    activeServices: activeServices || 0,
-    totalRevenue,
+    totalDepositCollected,
+    totalEstimatedRevenue,
     recentOrders: recentOrders || [],
     salespersonData,
     hourlyData,
@@ -129,24 +136,24 @@ export default async function AdminDashboard() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-brand-platinum">
-              Active Services
+              Total Deposit Collected
             </CardTitle>
-            <Package className="w-4 h-4 text-brand-platinum" />
+            <DollarSign className="w-4 h-4 text-brand-platinum" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.activeServices}</div>
+            <div className="text-2xl font-bold">${stats.totalDepositCollected.toFixed(2)}</div>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-brand-platinum">
-              Revenue (Paid)
+              Total Estimated Revenue
             </CardTitle>
             <TrendingUp className="w-4 h-4 text-brand-platinum" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">${stats.totalRevenue.toFixed(2)}</div>
+            <div className="text-2xl font-bold">${stats.totalEstimatedRevenue.toFixed(2)}</div>
           </CardContent>
         </Card>
       </div>
@@ -155,10 +162,10 @@ export default async function AdminDashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
         <Card>
           <CardHeader>
-            <CardTitle>Sales by Salesperson</CardTitle>
+            <CardTitle>Sales Leaderboard</CardTitle>
           </CardHeader>
           <CardContent>
-            <SalespersonPieChart data={stats.salespersonData} />
+            <SalespersonLeaderboard data={stats.salespersonData} />
           </CardContent>
         </Card>
 

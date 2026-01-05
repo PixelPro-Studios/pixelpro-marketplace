@@ -25,7 +25,9 @@ export default async function ConfirmationPage({
         <div className="inline-flex items-center justify-center w-16 h-16 bg-green-600 rounded-full mb-4">
           <CheckCircle className="w-10 h-10 text-white" />
         </div>
-        <h1 className="font-display text-3xl font-bold mb-2">Order Confirmed!</h1>
+        <h1 className="font-display text-3xl font-bold mb-2">
+          Reservation Confirmed!
+        </h1>
         <p className="text-brand-platinum text-lg">
           Please proceed to the cashier to complete your payment
         </p>
@@ -40,7 +42,9 @@ export default async function ConfirmationPage({
           <div className="flex flex-col md:flex-row gap-6 items-center justify-between p-6 bg-brand-black rounded-lg">
             <div className="flex-1">
               <p className="text-brand-silver text-sm mb-1">Reference Number</p>
-              <p className="font-mono text-2xl font-bold">{order.reference_number}</p>
+              <p className="font-mono text-2xl font-bold">
+                {order.reference_number}
+              </p>
               <p className="text-brand-platinum text-sm mt-2">
                 Show this QR code or reference number at the cashier
               </p>
@@ -77,7 +81,9 @@ export default async function ConfirmationPage({
           <div className="space-y-2 pt-4 border-t border-brand-graphite">
             <div className="flex justify-between text-brand-platinum">
               <span>Original Price:</span>
-              <span className="line-through">${order.total_original_price.toFixed(2)}</span>
+              <span className="line-through">
+                ${order.total_original_price.toFixed(2)}
+              </span>
             </div>
             <div className="flex justify-between text-green-500 font-semibold">
               <span>BOWS Savings:</span>
@@ -91,7 +97,9 @@ export default async function ConfirmationPage({
 
           {/* Contact Info */}
           <div className="pt-4 border-t border-brand-graphite">
-            <p className="text-sm text-brand-platinum mb-1">Contact Information</p>
+            <p className="text-sm text-brand-platinum mb-1">
+              Contact Information
+            </p>
             <p className="font-medium">{order.lead.full_name}</p>
             <p className="text-brand-platinum">{order.lead.email}</p>
             <p className="text-brand-platinum">{order.lead.phone}</p>
@@ -106,7 +114,11 @@ export default async function ConfirmationPage({
             Ready to Pay at Cashier
           </p>
           <p className="text-brand-platinum mb-4">
-            Show your QR code or reference number <span className="font-mono font-bold text-brand-off-white">{order.reference_number}</span> to complete payment
+            Show your QR code or reference number{" "}
+            <span className="font-mono font-bold text-brand-off-white">
+              {order.reference_number}
+            </span>{" "}
+            to complete payment
           </p>
           <p className="text-2xl font-bold text-brand-off-white mb-2">
             Amount Due: ${order.total_bows_price.toFixed(2)}
@@ -117,7 +129,10 @@ export default async function ConfirmationPage({
         </div>
 
         <div className="text-center">
-          <Link href="/" className="text-brand-platinum hover:text-brand-off-white text-sm">
+          <Link
+            href="/"
+            className="text-brand-platinum hover:text-brand-off-white text-sm"
+          >
             Return to Home
           </Link>
         </div>
@@ -126,9 +141,13 @@ export default async function ConfirmationPage({
       {/* Footer Info */}
       <div className="mt-8 p-4 bg-brand-charcoal rounded-lg">
         <p className="text-sm text-brand-platinum text-center">
-          Questions? Contact PixelPro Studios staff at the event booth
+          Questions? <br />
+          Contact PixelPro Studios staff at the event booth
           <br />
-          Reference: <span className="font-mono font-semibold">{order.reference_number}</span>
+          Reference:{" "}
+          <span className="font-mono font-semibold">
+            {order.reference_number}
+          </span>
         </p>
       </div>
     </div>

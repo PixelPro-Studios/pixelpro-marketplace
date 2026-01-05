@@ -48,7 +48,10 @@ export function SalespersonPieChart({ data }: SalespersonPieChartProps) {
             backgroundColor: "#1a1a1a",
             border: "1px solid #333",
             borderRadius: "8px",
-            color: "#e5e5e5",
+            color: "#ffffff",
+          }}
+          labelStyle={{
+            color: "#ffffff",
           }}
         />
         <Legend />

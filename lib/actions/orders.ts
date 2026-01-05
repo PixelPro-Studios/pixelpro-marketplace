@@ -2,9 +2,10 @@
 
 import { createClient } from "@/lib/supabase/server";
 import type { CreateOrderData } from "@/types";
+import { getSingaporeTime } from "@/lib/utils/timezone";
 
 function generateReferenceNumber(): string {
-  const date = new Date();
+  const date = getSingaporeTime();
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, "0");
   const day = String(date.getDate()).padStart(2, "0");
@@ -63,10 +64,18 @@ export async function createOrder(data: CreateOrderData) {
     const totalSavings = totalOriginalPrice - totalBowsPrice;
     const referenceNumber = generateReferenceNumber();
 
+    // Calculate deposit (default 30%)
+    const depositPercentage = 30.00;
+    const depositAmount = totalBowsPrice * (depositPercentage / 100);
+    const amountPaid = 0.00;
+    const balanceDue = totalBowsPrice;
+
     console.log("Creating order with totals:", {
       totalOriginalPrice,
       totalBowsPrice,
       totalSavings,
+      depositPercentage,
+      depositAmount,
       referenceNumber,
     });
 
@@ -79,6 +88,10 @@ export async function createOrder(data: CreateOrderData) {
         total_original_price: totalOriginalPrice,
         total_bows_price: totalBowsPrice,
         total_savings: totalSavings,
+        deposit_percentage: depositPercentage,
+        deposit_amount: depositAmount,
+        amount_paid: amountPaid,
+        balance_due: balanceDue,
         status: data.requestBundle ? "bundle_requested" : "pending_payment",
       })
       .select()
@@ -179,12 +192,19 @@ interface UpdateOrderData {
   total_original_price: number;
   total_bows_price: number;
   total_savings: number;
+  deposit_percentage: number;
+  amount_paid: number;
+  remarks?: string;
 }
 
 export async function updateOrder(orderId: string, data: UpdateOrderData) {
   try {
     console.log("Updating order:", orderId, data);
     const supabase = await createClient();
+
+    // Calculate deposit and balance
+    const depositAmount = data.total_bows_price * (data.deposit_percentage / 100);
+    const balanceDue = data.total_bows_price - data.amount_paid;
 
     // Update order totals and status
     const { error: orderError } = await supabase
@@ -195,7 +215,12 @@ export async function updateOrder(orderId: string, data: UpdateOrderData) {
         total_original_price: data.total_original_price,
         total_bows_price: data.total_bows_price,
         total_savings: data.total_savings,
-        updated_at: new Date().toISOString(),
+        deposit_percentage: data.deposit_percentage,
+        deposit_amount: depositAmount,
+        amount_paid: data.amount_paid,
+        balance_due: balanceDue,
+        remarks: data.remarks,
+        updated_at: getSingaporeTime().toISOString(),
       })
       .eq("id", orderId);
 

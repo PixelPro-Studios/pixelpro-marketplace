@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { formatSingaporeDate } from "@/lib/utils/timezone";
 
 async function getLeads() {
   const supabase = await createClient();
@@ -55,7 +56,7 @@ export default async function LeadsPage() {
                       <td className="py-3 px-4">{lead.email}</td>
                       <td className="py-3 px-4">{lead.phone}</td>
                       <td className="py-3 px-4 text-sm text-brand-platinum">
-                        {new Date(lead.created_at).toLocaleDateString()}
+                        {formatSingaporeDate(lead.created_at)}
                       </td>
                     </tr>
                   ))

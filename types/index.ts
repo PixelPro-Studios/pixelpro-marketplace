@@ -35,9 +35,14 @@ export interface Order {
   total_original_price: number;
   total_bows_price: number;
   total_savings: number;
+  deposit_percentage: number;
+  deposit_amount: number;
+  amount_paid: number;
+  balance_due: number;
   status: OrderStatus;
   payment_method?: string;
   notes?: string;
+  remarks?: string;
   created_at: string;
   updated_at: string;
 }

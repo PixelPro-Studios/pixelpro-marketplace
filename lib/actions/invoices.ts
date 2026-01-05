@@ -5,6 +5,7 @@ import { jsPDF } from "jspdf";
 import { Resend } from "resend";
 import fs from "fs";
 import path from "path";
+import { formatSingaporeDate } from "@/lib/utils/timezone";
 
 export async function sendInvoice(orderId: string) {
   try {
@@ -51,14 +52,19 @@ export async function sendInvoice(orderId: string) {
             <h3 style="margin-top: 0;">Order Details</h3>
             <p><strong>Invoice Number:</strong> ${order.reference_number}</p>
             <p><strong>Total Amount:</strong> $${order.total_bows_price.toFixed(2)}</p>
-            <p><strong>Status:</strong> ${order.status.replace("_", " ").toUpperCase()}</p>
+            <p style="color: #0066cc;"><strong>✓ Deposit Paid (${order.deposit_percentage}%):</strong> $${order.deposit_amount.toFixed(2)}</p>
+            <p style="color: #cc0000;"><strong>Balance Due:</strong> $${(order.total_bows_price - order.deposit_amount).toFixed(2)}</p>
           </div>
+
+          <p>Your deposit has been received.</p>
 
           <p>If you have any questions, please don't hesitate to contact us.</p>
 
           <p style="margin-top: 30px;">
             Best regards,<br/>
             <strong>PixelPro Studios</strong><br/>
+            <a href="https://www.pixelprostudios.sg" style="color: #0066cc; text-decoration: none;">www.pixelprostudios.sg</a><br/>
+            Phone: <a href="tel:+6588605489" style="color: #0066cc; text-decoration: none;">88605489</a>
           </p>
         </div>
       `,
@@ -118,8 +124,12 @@ async function generateInvoicePDF(order: any): Promise<Buffer> {
   doc.setFontSize(10);
   doc.setFont("helvetica", "normal");
   doc.text(`Invoice #: ${order.reference_number}`, 150, 30);
-  doc.text(`Date: ${new Date(order.created_at).toLocaleDateString()}`, 150, 37);
-  doc.text(`Status: ${order.status.replace("_", " ").toUpperCase()}`, 150, 44);
+  doc.text(`Date: ${formatSingaporeDate(order.created_at)}`, 150, 37);
+  doc.setTextColor(0, 100, 200);
+  doc.setFont("helvetica", "bold");
+  doc.text(`Status: Deposit Paid (${order.deposit_percentage}%)`, 150, 44);
+  doc.setTextColor(0, 0, 0);
+  doc.setFont("helvetica", "normal");
 
   // Customer Information
   doc.setFontSize(12);
@@ -133,7 +143,7 @@ async function generateInvoicePDF(order: any): Promise<Buffer> {
   doc.text(order.lead.phone, 20, 71);
 
   if (order.lead.event_date) {
-    doc.text(`Event Date: ${new Date(order.lead.event_date).toLocaleDateString()}`, 20, 78);
+    doc.text(`Event Date: ${formatSingaporeDate(order.lead.event_date)}`, 20, 78);
   }
 
   // Line separator
@@ -193,8 +203,22 @@ async function generateInvoicePDF(order: any): Promise<Buffer> {
   doc.setFontSize(12);
   doc.setFont("helvetica", "bold");
   doc.setTextColor(0, 0, 0);
-  doc.text("Total Amount Due:", 120, yPosition + 5);
+  doc.text("Total:", 120, yPosition + 5);
   doc.text(`$${order.total_bows_price.toFixed(2)}`, 170, yPosition + 5);
+
+  // Payment Information - Always show deposit paid for customer receipts
+  yPosition += 15;
+  doc.setFontSize(10);
+  doc.setFont("helvetica", "normal");
+  doc.setTextColor(0, 150, 0);
+  doc.text("Deposit Paid:", 120, yPosition);
+  doc.text(`$${order.deposit_amount.toFixed(2)}`, 170, yPosition);
+
+  yPosition += 7;
+  doc.setTextColor(255, 0, 0);
+  doc.setFont("helvetica", "bold");
+  doc.text("Balance Due:", 120, yPosition);
+  doc.text(`$${(order.total_bows_price - order.deposit_amount).toFixed(2)}`, 170, yPosition);
 
   // Footer
   doc.setFontSize(9);

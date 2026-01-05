@@ -81,10 +81,19 @@ export default function CartPage() {
   const totalOriginal = getTotalOriginalPrice();
   const totalBows = getTotalBowsPrice();
   const totalSavings = getTotalSavings();
+  const depositPercentage = 30; // Default 30%
+  const depositAmount = totalBows * (depositPercentage / 100);
 
   return (
     <>
-      <Progress currentStep={3} totalSteps={3} steps={["Contact", "Services", "Review"]} />
+      <Progress currentStep={3} totalSteps={3} steps={["Contact", "Services", "Reserve"]} />
+
+      {/* Top Banner */}
+      <div className="mb-6 p-4 bg-blue-600/10 border border-blue-600 rounded-lg text-center">
+        <p className="text-blue-400 font-medium">
+          Wedding date not confirmed yet? Reserve now and choose later.
+        </p>
+      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Cart Items */}
@@ -176,6 +185,10 @@ export default function CartPage() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
+                <div className="flex justify-between text-brand-platinum text-sm">
+                  <span>Event Date:</span>
+                  <span className="italic">TBD (to be confirmed)</span>
+                </div>
                 <div className="flex justify-between text-brand-platinum">
                   <span>Original Price:</span>
                   <span className="line-through">${totalOriginal.toFixed(2)}</span>
@@ -187,6 +200,15 @@ export default function CartPage() {
                 <div className="border-t border-brand-graphite pt-2 flex justify-between font-display text-xl font-bold">
                   <span>Total:</span>
                   <span>${totalBows.toFixed(2)}</span>
+                </div>
+                <div className="border-t border-brand-graphite pt-2">
+                  <div className="flex justify-between text-blue-400 font-semibold mb-2">
+                    <span>Pay Today ({depositPercentage}% Deposit):</span>
+                    <span>${depositAmount.toFixed(2)}</span>
+                  </div>
+                  <p className="text-xs text-brand-silver">
+                    Remaining balance of ${(totalBows - depositAmount).toFixed(2)} due before event
+                  </p>
                 </div>
               </div>
 
@@ -202,11 +224,11 @@ export default function CartPage() {
                 className="w-full"
                 disabled={isSubmitting || items.length === 0}
               >
-                {isSubmitting ? "Processing..." : "Complete Order"}
+                {isSubmitting ? "Processing..." : "Lock in BOWS deal"}
               </Button>
 
               <p className="text-xs text-brand-silver text-center">
-                Confirm your order to proceed to cashier payment
+                Reserve your order to proceed to cashier payment
               </p>
             </CardContent>
           </Card>

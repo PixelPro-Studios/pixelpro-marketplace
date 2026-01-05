@@ -3,6 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { OrderEditForm } from "@/components/admin/order-edit-form";
 import { OrderEditActions } from "@/components/admin/order-edit-actions";
+import { formatSingaporeDate, formatSingaporeDateTime } from "@/lib/utils/timezone";
 
 async function getOrder(id: string) {
   const supabase = await createClient();
@@ -89,7 +90,7 @@ export default async function OrderEditPage({
               <div>
                 <p className="text-sm text-brand-platinum mb-1">Event Date</p>
                 <p className="font-medium">
-                  {new Date(order.lead.event_date).toLocaleDateString()}
+                  {formatSingaporeDate(order.lead.event_date)}
                 </p>
               </div>
               {order.lead.additional_notes && (
@@ -109,13 +110,13 @@ export default async function OrderEditPage({
               <div>
                 <p className="text-sm text-brand-platinum mb-1">Created</p>
                 <p className="font-medium">
-                  {new Date(order.created_at).toLocaleString()}
+                  {formatSingaporeDateTime(order.created_at)}
                 </p>
               </div>
               <div>
                 <p className="text-sm text-brand-platinum mb-1">Last Updated</p>
                 <p className="font-medium">
-                  {new Date(order.updated_at).toLocaleString()}
+                  {formatSingaporeDateTime(order.updated_at)}
                 </p>
               </div>
             </CardContent>

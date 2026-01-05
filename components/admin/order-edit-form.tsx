@@ -61,6 +61,9 @@ export function OrderEditForm({ order, services, showButtons = true }: OrderEdit
   const [salesperson, setSalesperson] = useState(order.salesperson || '');
   const [items, setItems] = useState(order.order_items);
   const [customBowsPrice, setCustomBowsPrice] = useState<number | null>(null);
+  const [depositPercentage, setDepositPercentage] = useState(order.deposit_percentage || 30);
+  const [amountPaid, setAmountPaid] = useState(order.amount_paid || 0);
+  const [remarks, setRemarks] = useState(order.remarks || '');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -75,7 +78,7 @@ export function OrderEditForm({ order, services, showButtons = true }: OrderEdit
     return () => {
       window.removeEventListener("orderEditSubmit", handleExternalSubmit);
     };
-  }, [status, salesperson, items, customBowsPrice]); // Re-create listener when form data changes
+  }, [status, salesperson, items, customBowsPrice, depositPercentage, amountPaid, remarks]); // Re-create listener when form data changes
 
   // Calculate totals
   const calculateTotals = (orderItems: OrderItem[]) => {
@@ -167,6 +170,9 @@ export function OrderEditForm({ order, services, showButtons = true }: OrderEdit
         total_original_price: totals.totalOriginal,
         total_bows_price: totals.totalBows,
         total_savings: totals.totalSavings,
+        deposit_percentage: depositPercentage,
+        amount_paid: amountPaid,
+        remarks: remarks,
       });
 
       if (result.success) {
@@ -193,33 +199,83 @@ export function OrderEditForm({ order, services, showButtons = true }: OrderEdit
           <CardTitle>Order Information</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium mb-2">Status</label>
-              <select
-                value={status}
-                onChange={(e) => setStatus(e.target.value)}
-                className="w-full px-4 py-2 bg-brand-charcoal border border-brand-graphite rounded-lg focus:outline-none focus:border-brand-off-white"
-              >
-                <option value="pending_payment">Pending Payment</option>
-                <option value="paid">Paid</option>
-                <option value="cancelled">Cancelled</option>
-              </select>
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium mb-2">Status</label>
+                <select
+                  value={status}
+                  onChange={(e) => setStatus(e.target.value)}
+                  className="w-full px-4 py-2 bg-brand-charcoal border border-brand-graphite rounded-lg focus:outline-none focus:border-brand-off-white"
+                >
+                  <option value="pending_payment">Pending Payment</option>
+                  <option value="paid">Paid</option>
+                  <option value="cancelled">Cancelled</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-2">Salesperson</label>
+                <select
+                  value={salesperson}
+                  onChange={(e) => setSalesperson(e.target.value)}
+                  className="w-full px-4 py-2 bg-brand-charcoal border border-brand-graphite rounded-lg focus:outline-none focus:border-brand-off-white"
+                >
+                  <option value="">Select salesperson...</option>
+                  {SALESPEOPLE.map((person) => (
+                    <option key={person} value={person}>
+                      {person}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium mb-2">
+                  Deposit Percentage (%)
+                </label>
+                <Input
+                  type="number"
+                  value={depositPercentage}
+                  onChange={(e) => setDepositPercentage(Number(e.target.value))}
+                  min={0}
+                  max={100}
+                  step={1}
+                  className="w-full"
+                />
+                <p className="text-xs text-brand-platinum mt-1">
+                  Deposit: ${((totals.totalBows * depositPercentage) / 100).toFixed(2)}
+                </p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-2">
+                  Amount Paid ($)
+                </label>
+                <Input
+                  type="number"
+                  value={amountPaid}
+                  onChange={(e) => setAmountPaid(Number(e.target.value))}
+                  min={0}
+                  max={totals.totalBows}
+                  step={0.01}
+                  className="w-full"
+                />
+                <p className="text-xs text-brand-platinum mt-1">
+                  Balance: ${(totals.totalBows - amountPaid).toFixed(2)}
+                </p>
+              </div>
+            </div>
+
             <div>
-              <label className="block text-sm font-medium mb-2">Salesperson</label>
-              <select
-                value={salesperson}
-                onChange={(e) => setSalesperson(e.target.value)}
-                className="w-full px-4 py-2 bg-brand-charcoal border border-brand-graphite rounded-lg focus:outline-none focus:border-brand-off-white"
-              >
-                <option value="">Select salesperson...</option>
-                {SALESPEOPLE.map((person) => (
-                  <option key={person} value={person}>
-                    {person}
-                  </option>
-                ))}
-              </select>
+              <label className="block text-sm font-medium mb-2">Remarks</label>
+              <textarea
+                value={remarks}
+                onChange={(e) => setRemarks(e.target.value)}
+                rows={3}
+                placeholder="Internal notes for this order..."
+                className="w-full px-4 py-2 bg-brand-charcoal border border-brand-graphite rounded-lg focus:outline-none focus:border-brand-off-white resize-none"
+              />
             </div>
           </div>
         </CardContent>

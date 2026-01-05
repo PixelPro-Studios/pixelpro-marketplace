@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import Link from "next/link";
 import { SendInvoiceButton } from "@/components/admin/send-invoice-button";
 import { Pencil } from "lucide-react";
+import { formatSingaporeDate } from "@/lib/utils/timezone";
 
 async function getOrders() {
   const supabase = await createClient();
@@ -100,7 +101,7 @@ export default async function OrdersPage() {
                         </span>
                       </td>
                       <td className="py-3 px-4 text-sm text-brand-platinum">
-                        {new Date(order.created_at).toLocaleDateString()}
+                        {formatSingaporeDate(order.created_at)}
                       </td>
                       <td className="py-3 px-4">
                         <div className="flex gap-3 items-center">
