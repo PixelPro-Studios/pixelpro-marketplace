@@ -28,6 +28,11 @@ interface Order {
   total_original_price: number;
   total_bows_price: number;
   total_savings: number;
+  deposit_percentage: number;
+  deposit_amount: number;
+  amount_paid: number;
+  balance_due: number;
+  remarks?: string;
   order_items: OrderItem[];
 }
 
