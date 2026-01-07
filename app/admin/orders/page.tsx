@@ -115,6 +115,7 @@ export default async function OrdersPage() {
                           <SendInvoiceButton
                             orderId={order.id}
                             referenceNumber={order.reference_number}
+                            invoiceSentAt={order.invoice_sent_at}
                           />
                         </div>
                       </td>

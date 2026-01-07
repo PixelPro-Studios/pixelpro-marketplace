@@ -5,7 +5,7 @@ import { jsPDF } from "jspdf";
 import { Resend } from "resend";
 import fs from "fs";
 import path from "path";
-import { formatSingaporeDate } from "@/lib/utils/timezone";
+import { formatSingaporeDate, getSingaporeTime } from "@/lib/utils/timezone";
 
 export async function sendInvoice(orderId: string) {
   try {
@@ -80,6 +80,16 @@ export async function sendInvoice(orderId: string) {
       console.error("Error sending email:", emailError);
       return { success: false, error: "Failed to send invoice email" };
     }
+
+    // Update the order to track invoice sent
+    const currentCount = order.invoice_sent_count || 0;
+    await supabase
+      .from("orders")
+      .update({
+        invoice_sent_at: getSingaporeTime().toISOString(),
+        invoice_sent_count: currentCount + 1,
+      })
+      .eq("id", orderId);
 
     console.log("Invoice sent successfully:", emailData);
     return {

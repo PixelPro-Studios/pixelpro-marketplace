@@ -1,5 +1,15 @@
 // Database Types
-export type ServiceCategory = "photobooth" | "videography" | "addon";
+export type ServiceCategory =
+  | "sound"
+  | "led-walls"
+  | "dj"
+  | "emerging-band"
+  | "seasoned-band"
+  | "chinese-ensemble"
+  | "emcee"
+  | "stage-lighting"
+  | "photobooth"
+  | "photography";
 export type OrderStatus = "pending_payment" | "paid" | "bundle_requested" | "cancelled";
 
 export interface Service {
@@ -13,6 +23,9 @@ export interface Service {
   video_url?: string;
   is_active: boolean;
   display_order: number;
+  is_addon?: boolean;
+  parent_service_id?: string | null;
+  addon_price_per_unit?: number | null;
   created_at: string;
   updated_at: string;
 }
@@ -43,6 +56,8 @@ export interface Order {
   payment_method?: string;
   notes?: string;
   remarks?: string;
+  invoice_sent_at?: string | null;
+  invoice_sent_count?: number;
   created_at: string;
   updated_at: string;
 }

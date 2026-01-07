@@ -8,14 +8,22 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { getActiveServices } from "@/lib/actions/services";
 import { useCartStore } from "@/lib/stores/cart";
+import { ServiceModal } from "@/components/booking/service-modal";
 import type { Service, ServiceCategory } from "@/types";
-import { ShoppingCart, Plus, Minus } from "lucide-react";
+import { ShoppingCart, Plus, Minus, ChevronDown } from "lucide-react";
 
 const categories: { value: ServiceCategory | "all"; label: string }[] = [
   { value: "all", label: "All Services" },
+  { value: "sound", label: "Sound System" },
+  { value: "led-walls", label: "LED Walls" },
+  { value: "dj", label: "Wedding DJ" },
+  { value: "emerging-band", label: "Emerging Wedding Band" },
+  { value: "seasoned-band", label: "Seasoned Wedding Band" },
+  { value: "chinese-ensemble", label: "Chinese Ensemble" },
+  { value: "emcee", label: "Wedding Emcee" },
+  { value: "stage-lighting", label: "Stage Lighting" },
   { value: "photobooth", label: "Photobooth" },
-  { value: "videography", label: "Videography" },
-  { value: "addon", label: "Add-ons" },
+  { value: "photography", label: "Photography" },
 ];
 
 export default function ServicesPage() {
@@ -24,7 +32,8 @@ export default function ServicesPage() {
   const [filteredServices, setFilteredServices] = useState<Service[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<ServiceCategory | "all">("all");
   const [loading, setLoading] = useState(true);
-  const [cartOpen, setCartOpen] = useState(false);
+  const [selectedService, setSelectedService] = useState<Service | null>(null);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
 
   const { items, addItem, updateQuantity, getTotalBowsPrice } = useCartStore();
 
@@ -41,9 +50,11 @@ export default function ServicesPage() {
 
   useEffect(() => {
     if (selectedCategory === "all") {
-      setFilteredServices(services);
+      // Filter out add-ons when showing all services
+      setFilteredServices(services.filter((s) => !s.is_addon));
     } else {
-      setFilteredServices(services.filter((s) => s.category === selectedCategory));
+      // Filter by category and exclude add-ons
+      setFilteredServices(services.filter((s) => s.category === selectedCategory && !s.is_addon));
     }
   }, [selectedCategory, services]);
 
@@ -52,7 +63,7 @@ export default function ServicesPage() {
     const result = await getActiveServices();
     if (result.success && result.data) {
       setServices(result.data);
-      setFilteredServices(result.data);
+      setFilteredServices(result.data.filter((s) => !s.is_addon));
     }
     setLoading(false);
   };
@@ -62,8 +73,26 @@ export default function ServicesPage() {
     return item?.quantity || 0;
   };
 
-  const handleAddToCart = (service: Service) => {
+  const getServiceAddons = (service: Service) => {
+    return services.filter((s) => s.is_addon && s.category === service.category);
+  };
+
+  const handleServiceClick = (service: Service) => {
+    const addons = getServiceAddons(service);
+    if (addons.length > 0) {
+      setSelectedService(service);
+    } else {
+      addItem(service, 1);
+    }
+  };
+
+  const handleAddToCartWithAddons = (service: Service, addons: { service: Service; quantity: number }[]) => {
     addItem(service, 1);
+    addons.forEach(({ service: addon, quantity }) => {
+      if (quantity > 0) {
+        addItem(addon, quantity);
+      }
+    });
   };
 
   const handleQuantityChange = (serviceId: string, delta: number) => {
@@ -87,25 +116,51 @@ export default function ServicesPage() {
     );
   }
 
+  const selectedCategoryLabel = categories.find((c) => c.value === selectedCategory)?.label || "All Services";
+
   return (
     <>
       <Progress currentStep={2} totalSteps={3} steps={["Contact", "Services", "Review"]} />
 
-      {/* Category Tabs */}
-      <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
-        {categories.map((cat) => (
-          <button
-            key={cat.value}
-            onClick={() => setSelectedCategory(cat.value)}
-            className={`px-4 py-2 rounded-lg font-medium whitespace-nowrap transition-colors ${
-              selectedCategory === cat.value
-                ? "bg-brand-off-white text-brand-black"
-                : "bg-brand-charcoal text-brand-platinum hover:bg-brand-graphite"
-            }`}
-          >
-            {cat.label}
-          </button>
-        ))}
+      {/* Category Dropdown */}
+      <div className="mb-6 relative">
+        <button
+          onClick={() => setDropdownOpen(!dropdownOpen)}
+          className="w-full md:w-64 px-4 py-3 bg-brand-charcoal border border-brand-graphite rounded-lg flex items-center justify-between hover:bg-brand-graphite transition-colors"
+        >
+          <span className="font-medium">{selectedCategoryLabel}</span>
+          <ChevronDown className={`w-5 h-5 transition-transform ${dropdownOpen ? 'rotate-180' : ''}`} />
+        </button>
+
+        {dropdownOpen && (
+          <>
+            {/* Backdrop */}
+            <div
+              className="fixed inset-0 z-10"
+              onClick={() => setDropdownOpen(false)}
+            />
+
+            {/* Dropdown Menu */}
+            <div className="absolute top-full left-0 mt-2 w-full md:w-64 bg-brand-charcoal border border-brand-graphite rounded-lg shadow-xl z-20 max-h-96 overflow-y-auto">
+              {categories.map((cat) => (
+                <button
+                  key={cat.value}
+                  onClick={() => {
+                    setSelectedCategory(cat.value);
+                    setDropdownOpen(false);
+                  }}
+                  className={`w-full px-4 py-3 text-left hover:bg-brand-graphite transition-colors ${
+                    selectedCategory === cat.value
+                      ? "bg-brand-graphite text-brand-off-white font-semibold"
+                      : "text-brand-platinum"
+                  }`}
+                >
+                  {cat.label}
+                </button>
+              ))}
+            </div>
+          </>
+        )}
       </div>
 
       {/* Services Grid */}
@@ -114,10 +169,11 @@ export default function ServicesPage() {
           const quantity = getItemQuantity(service.id);
           const savings = service.original_price - service.bows_price;
           const savingsPercent = Math.round((savings / service.original_price) * 100);
+          const hasAddons = getServiceAddons(service).length > 0;
 
           return (
             <Card key={service.id} className="overflow-hidden">
-              <div className="relative h-48 bg-brand-graphite">
+              <div className="relative aspect-square bg-brand-graphite rounded-t-lg overflow-hidden">
                 <Image
                   src={service.image_url}
                   alt={service.name}
@@ -133,7 +189,9 @@ export default function ServicesPage() {
                     Save {savingsPercent}%
                   </span>
                 </div>
-                <p className="text-brand-platinum text-sm mb-4">{service.description}</p>
+                <p className="text-brand-platinum text-sm mb-4 line-clamp-2">
+                  {service.description.split('\n')[0]}
+                </p>
                 <div className="flex items-end justify-between mb-4">
                   <div>
                     <p className="text-brand-silver line-through text-sm">
@@ -145,34 +203,57 @@ export default function ServicesPage() {
                   </div>
                 </div>
 
-                {quantity === 0 ? (
-                  <Button onClick={() => handleAddToCart(service)} className="w-full">
-                    Add to Cart
+                <div className="flex gap-2">
+                  <Button
+                    onClick={() => setSelectedService(service)}
+                    variant="secondary"
+                    className="flex-1"
+                  >
+                    View Details
                   </Button>
-                ) : (
-                  <div className="flex items-center gap-2">
+                  {quantity === 0 ? (
                     <Button
-                      variant="secondary"
-                      size="sm"
-                      onClick={() => handleQuantityChange(service.id, -1)}
+                      onClick={() => handleServiceClick(service)}
+                      className="flex-1"
                     >
-                      <Minus className="w-4 h-4" />
+                      Add to Cart
                     </Button>
-                    <span className="flex-1 text-center font-semibold">{quantity} in cart</span>
-                    <Button
-                      variant="secondary"
-                      size="sm"
-                      onClick={() => handleQuantityChange(service.id, 1)}
-                    >
-                      <Plus className="w-4 h-4" />
-                    </Button>
-                  </div>
-                )}
+                  ) : (
+                    <div className="flex items-center gap-2 flex-1">
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => handleQuantityChange(service.id, -1)}
+                      >
+                        <Minus className="w-4 h-4" />
+                      </Button>
+                      <span className="flex-1 text-center font-semibold text-sm">{quantity}</span>
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => handleQuantityChange(service.id, 1)}
+                      >
+                        <Plus className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  )}
+                </div>
               </div>
             </Card>
           );
         })}
       </div>
+
+      {/* Service Modal */}
+      {selectedService && (
+        <ServiceModal
+          service={selectedService}
+          addons={getServiceAddons(selectedService)}
+          isOpen={!!selectedService}
+          onClose={() => setSelectedService(null)}
+          onAddToCart={handleAddToCartWithAddons}
+        />
+      )}
 
       {/* Floating Cart Widget */}
       {items.length > 0 && (

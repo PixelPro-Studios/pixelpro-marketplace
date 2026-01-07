@@ -202,13 +202,9 @@ export default function CartPage() {
                   <span>${totalBows.toFixed(2)}</span>
                 </div>
                 <div className="border-t border-brand-graphite pt-2">
-                  <div className="flex justify-between text-blue-400 font-semibold mb-2">
-                    <span>Pay Today ({depositPercentage}% Deposit):</span>
-                    <span>${depositAmount.toFixed(2)}</span>
+                  <div className="flex justify-between text-blue-400 font-semibold">
+                    <span>Pay only ${depositAmount.toFixed(2)} today</span>
                   </div>
-                  <p className="text-xs text-brand-silver">
-                    Remaining balance of ${(totalBows - depositAmount).toFixed(2)} due before event
-                  </p>
                 </div>
               </div>
 

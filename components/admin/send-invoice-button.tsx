@@ -1,17 +1,19 @@
 "use client";
 
 import { useState } from "react";
-import { Mail } from "lucide-react";
+import { Mail, CheckCircle } from "lucide-react";
 import { sendInvoice } from "@/lib/actions/invoices";
 
 interface SendInvoiceButtonProps {
   orderId: string;
   referenceNumber: string;
+  invoiceSentAt?: string | null;
 }
 
-export function SendInvoiceButton({ orderId, referenceNumber }: SendInvoiceButtonProps) {
+export function SendInvoiceButton({ orderId, referenceNumber, invoiceSentAt }: SendInvoiceButtonProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [hasSent, setHasSent] = useState(!!invoiceSentAt);
 
   const handleSendInvoice = async () => {
     setIsLoading(true);
@@ -21,6 +23,7 @@ export function SendInvoiceButton({ orderId, referenceNumber }: SendInvoiceButto
       const result = await sendInvoice(orderId);
 
       if (result.success) {
+        setHasSent(true);
         setMessage({ type: "success", text: result.message || "Invoice sent successfully" });
         setTimeout(() => setMessage(null), 3000);
       } else {
@@ -38,10 +41,18 @@ export function SendInvoiceButton({ orderId, referenceNumber }: SendInvoiceButto
       <button
         onClick={handleSendInvoice}
         disabled={isLoading}
-        className="text-green-500 hover:text-green-400 transition-colors disabled:opacity-50"
-        title="Send invoice email"
+        className={`transition-colors disabled:opacity-50 ${
+          hasSent
+            ? "text-green-500 hover:text-green-400"
+            : "text-blue-500 hover:text-blue-400"
+        }`}
+        title={hasSent ? "Resend invoice email" : "Send invoice email"}
       >
-        <Mail className={`w-4 h-4 ${isLoading ? 'animate-pulse' : ''}`} />
+        {hasSent ? (
+          <CheckCircle className={`w-4 h-4 ${isLoading ? 'animate-pulse' : ''}`} />
+        ) : (
+          <Mail className={`w-4 h-4 ${isLoading ? 'animate-pulse' : ''}`} />
+        )}
       </button>
 
       {message && (
