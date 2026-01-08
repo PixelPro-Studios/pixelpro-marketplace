@@ -117,6 +117,10 @@ export default function ServicesPage() {
 
   const selectedCategoryLabel = categories.find((c) => c.value === selectedCategory)?.label || "All Services";
 
+  const getCategoryLabel = (category: ServiceCategory) => {
+    return categories.find((c) => c.value === category)?.label || category;
+  };
+
   return (
     <>
       <Progress currentStep={2} totalSteps={3} steps={["Contact", "Services", "Review"]} />
@@ -183,8 +187,13 @@ export default function ServicesPage() {
               </div>
               <div className="p-4">
                 <div className="flex justify-between items-start mb-2">
-                  <h3 className="font-display text-xl font-semibold">{service.name}</h3>
-                  <span className="bg-green-600 text-white text-xs px-2 py-1 rounded">
+                  <div className="flex-1">
+                    <h3 className="font-display text-xl font-semibold">{service.name}</h3>
+                    <span className="inline-block mt-1 text-xs text-brand-silver">
+                      {getCategoryLabel(service.category)}
+                    </span>
+                  </div>
+                  <span className="bg-green-600 text-white text-xs px-2 py-1 rounded flex-shrink-0">
                     Save {savingsPercent}%
                   </span>
                 </div>

@@ -14,10 +14,27 @@ interface ServiceModalProps {
   onAddToCart: (service: Service, addons: { service: Service; quantity: number }[]) => void;
 }
 
+const categoryLabels: Record<string, string> = {
+  'sound': 'Sound System',
+  'led-walls': 'LED Walls',
+  'dj': 'Wedding DJ',
+  'emerging-band': 'Emerging Wedding Band',
+  'seasoned-band': 'Seasoned Wedding Band',
+  'chinese-ensemble': 'Chinese Ensemble',
+  'emcee': 'Wedding Emcee',
+  'stage-lighting': 'Stage Lighting',
+  'photobooth': 'Photobooth',
+  'photography': 'Photography',
+};
+
 export function ServiceModal({ service, addons, isOpen, onClose, onAddToCart }: ServiceModalProps) {
   const [selectedAddons, setSelectedAddons] = useState<Record<string, number>>({});
 
   if (!isOpen) return null;
+
+  const getCategoryLabel = (category: string) => {
+    return categoryLabels[category] || category;
+  };
 
   // Filter add-ons based on service type for photography
   const filteredAddons = addons.filter((addon) => {
@@ -80,7 +97,12 @@ export function ServiceModal({ service, addons, isOpen, onClose, onAddToCart }: 
       <div className="bg-brand-charcoal rounded-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto border border-brand-graphite">
         {/* Header */}
         <div className="sticky top-0 bg-brand-charcoal border-b border-brand-graphite p-4 flex items-center justify-between z-10">
-          <h2 className="font-display text-2xl font-bold">{service.name}</h2>
+          <div>
+            <h2 className="font-display text-2xl font-bold">{service.name}</h2>
+            <p className="text-sm text-brand-silver mt-1">
+              {getCategoryLabel(service.category)}
+            </p>
+          </div>
           <button
             onClick={onClose}
             className="text-brand-platinum hover:text-brand-off-white transition-colors"

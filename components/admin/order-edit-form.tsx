@@ -51,13 +51,15 @@ interface OrderEditFormProps {
 
 const SALESPEOPLE = [
   'Caleb',
+  'Darrvin',
   'Deanna',
   'Jia Ni',
   'Jia Yao',
-  'Karen',
   'Jovin',
-  'Zi Qi',
-  'Lukas'
+  'Karen',
+  'Lukas',
+  'Nicole',
+  'Zi Qi'
 ];
 
 export function OrderEditForm({ order, services, showButtons = true }: OrderEditFormProps) {
