@@ -19,6 +19,31 @@ export function ServiceModal({ service, addons, isOpen, onClose, onAddToCart }: 
 
   if (!isOpen) return null;
 
+  // Filter add-ons based on service type for photography
+  const filteredAddons = addons.filter((addon) => {
+    if (service.category !== 'photography') return true;
+
+    const serviceName = service.name;
+    const addonName = addon.name;
+
+    // ROM packages - only show ROM Additional Hours
+    if (serviceName.includes('ROM')) {
+      return addonName.includes('ROM Photography Additional');
+    }
+
+    // Pre-Wedding packages - only show Pre-Wedding Additional Hours
+    if (serviceName.includes('Pre-Wedding')) {
+      return addonName.includes('Pre-Wedding Photography Additional');
+    }
+
+    // Actual Day packages (Essential/Signature/Premium Day Coverage) - only show Actual Day addons
+    if (serviceName.includes('Day Coverage')) {
+      return addonName.includes('Actual Day Photography Additional');
+    }
+
+    return false;
+  });
+
   const handleAddonQuantityChange = (addonId: string, delta: number) => {
     setSelectedAddons((prev) => {
       const current = prev[addonId] || 0;
@@ -99,11 +124,11 @@ export function ServiceModal({ service, addons, isOpen, onClose, onAddToCart }: 
           </div>
 
           {/* Add-ons */}
-          {addons.length > 0 && (
+          {filteredAddons.length > 0 && (
             <div className="mb-6">
               <h3 className="font-semibold text-lg mb-4">Add-Ons</h3>
               <div className="space-y-3">
-                {addons.map((addon) => (
+                {filteredAddons.map((addon) => (
                   <div
                     key={addon.id}
                     className="flex items-center justify-between p-4 bg-brand-graphite rounded-lg"

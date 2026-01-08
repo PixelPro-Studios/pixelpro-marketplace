@@ -17,7 +17,6 @@ const categories: { value: ServiceCategory | "all"; label: string }[] = [
   { value: "sound", label: "Sound System" },
   { value: "led-walls", label: "LED Walls" },
   { value: "dj", label: "Wedding DJ" },
-  { value: "emerging-band", label: "Emerging Wedding Band" },
   { value: "seasoned-band", label: "Seasoned Wedding Band" },
   { value: "chinese-ensemble", label: "Chinese Ensemble" },
   { value: "emcee", label: "Wedding Emcee" },
@@ -50,8 +49,8 @@ export default function ServicesPage() {
 
   useEffect(() => {
     if (selectedCategory === "all") {
-      // Filter out add-ons when showing all services
-      setFilteredServices(services.filter((s) => !s.is_addon));
+      // Filter out add-ons and emerging-band category when showing all services
+      setFilteredServices(services.filter((s) => !s.is_addon && s.category !== "emerging-band"));
     } else {
       // Filter by category and exclude add-ons
       setFilteredServices(services.filter((s) => s.category === selectedCategory && !s.is_addon));
@@ -63,7 +62,7 @@ export default function ServicesPage() {
     const result = await getActiveServices();
     if (result.success && result.data) {
       setServices(result.data);
-      setFilteredServices(result.data.filter((s) => !s.is_addon));
+      setFilteredServices(result.data.filter((s) => !s.is_addon && s.category !== "emerging-band"));
     }
     setLoading(false);
   };

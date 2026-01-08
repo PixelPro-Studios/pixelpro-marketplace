@@ -197,7 +197,19 @@ export function OrderEditForm({ order, services, showButtons = true }: OrderEdit
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 relative">
+      {/* Loading Overlay */}
+      {isSubmitting && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center">
+          <div className="bg-brand-charcoal p-8 rounded-xl border border-brand-graphite">
+            <div className="flex flex-col items-center gap-4">
+              <div className="w-12 h-12 border-4 border-brand-graphite border-t-brand-off-white rounded-full animate-spin" />
+              <p className="text-lg font-medium">Updating order...</p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Order Status */}
       <Card>
         <CardHeader>
