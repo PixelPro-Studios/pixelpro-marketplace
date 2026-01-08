@@ -67,7 +67,6 @@ export function OrderEditForm({ order, services, showButtons = true }: OrderEdit
   const [items, setItems] = useState(order.order_items);
   const [customBowsPrice, setCustomBowsPrice] = useState<number | null>(null);
   const [depositPercentage, setDepositPercentage] = useState(order.deposit_percentage || 30);
-  const [amountPaid, setAmountPaid] = useState(order.amount_paid || 0);
   const [remarks, setRemarks] = useState(order.remarks || '');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -83,7 +82,7 @@ export function OrderEditForm({ order, services, showButtons = true }: OrderEdit
     return () => {
       window.removeEventListener("orderEditSubmit", handleExternalSubmit);
     };
-  }, [status, salesperson, items, customBowsPrice, depositPercentage, amountPaid, remarks]); // Re-create listener when form data changes
+  }, [status, salesperson, items, customBowsPrice, depositPercentage, remarks]); // Re-create listener when form data changes
 
   // Calculate totals
   const calculateTotals = (orderItems: OrderItem[]) => {
@@ -109,6 +108,9 @@ export function OrderEditForm({ order, services, showButtons = true }: OrderEdit
     totalBows: finalBowsPrice,
     totalSavings: calculatedTotals.totalOriginal - finalBowsPrice,
   };
+
+  // Calculate deposit amount based on percentage
+  const depositAmount = (totals.totalBows * depositPercentage) / 100;
 
   // Update quantity
   const updateQuantity = (itemId: string, newQuantity: number) => {
@@ -176,7 +178,7 @@ export function OrderEditForm({ order, services, showButtons = true }: OrderEdit
         total_bows_price: totals.totalBows,
         total_savings: totals.totalSavings,
         deposit_percentage: depositPercentage,
-        amount_paid: amountPaid,
+        amount_paid: depositAmount,
         remarks: remarks,
       });
 
@@ -269,17 +271,11 @@ export function OrderEditForm({ order, services, showButtons = true }: OrderEdit
                 <label className="block text-sm font-medium mb-2">
                   Amount Paid ($)
                 </label>
-                <Input
-                  type="number"
-                  value={amountPaid}
-                  onChange={(e) => setAmountPaid(Number(e.target.value))}
-                  min={0}
-                  max={totals.totalBows}
-                  step={0.01}
-                  className="w-full"
-                />
+                <div className="w-full px-4 py-2 bg-brand-graphite border border-brand-graphite rounded-lg text-brand-platinum">
+                  ${depositAmount.toFixed(2)}
+                </div>
                 <p className="text-xs text-brand-platinum mt-1">
-                  Balance: ${(totals.totalBows - amountPaid).toFixed(2)}
+                  Balance: ${(totals.totalBows - depositAmount).toFixed(2)}
                 </p>
               </div>
             </div>
