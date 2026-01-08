@@ -236,7 +236,7 @@ export default function OrdersPage() {
                       return (
                         <Button
                           key={page}
-                          variant={page === currentPage ? "default" : "secondary"}
+                          variant={page === currentPage ? "primary" : "secondary"}
                           size="sm"
                           onClick={() => goToPage(page)}
                           className="min-w-[40px]"
