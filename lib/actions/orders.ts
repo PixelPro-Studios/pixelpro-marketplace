@@ -188,6 +188,8 @@ interface UpdateOrderData {
     id?: string;
     service_id: string;
     quantity: number;
+    original_price?: number;
+    bows_price?: number;
   }>;
   total_original_price: number;
   total_bows_price: number;
@@ -258,20 +260,22 @@ export async function updateOrder(orderId: string, data: UpdateOrderData) {
 
     // Update existing items
     for (const item of itemsToUpdate) {
-      // Fetch service details for pricing
-      const { data: service } = await supabase
-        .from("services")
-        .select("original_price, bows_price")
-        .eq("id", item.service_id)
-        .single();
+      // Update quantity and prices (prices may have been manually overridden)
+      const updateData: any = {
+        quantity: item.quantity,
+      };
+
+      // If prices are provided, update them (they may have been adjusted)
+      if (item.original_price !== undefined) {
+        updateData.original_price = item.original_price;
+      }
+      if (item.bows_price !== undefined) {
+        updateData.bows_price = item.bows_price;
+      }
 
       const { error: updateError } = await supabase
         .from("order_items")
-        .update({
-          quantity: item.quantity,
-          original_price: service?.original_price,
-          bows_price: service?.bows_price,
-        })
+        .update(updateData)
         .eq("id", item.id);
 
       if (updateError) {

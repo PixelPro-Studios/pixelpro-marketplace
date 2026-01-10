@@ -12,6 +12,8 @@ interface OrderItem {
   id: string;
   service_id: string;
   quantity: number;
+  original_price: number;
+  bows_price: number;
   service: {
     id: string;
     name: string;
@@ -67,7 +69,41 @@ export function OrderEditForm({ order, services, showButtons = true }: OrderEdit
   const [status, setStatus] = useState(order.status);
   const [salesperson, setSalesperson] = useState(order.salesperson || '');
   const [items, setItems] = useState(order.order_items);
-  const [customBowsPrice, setCustomBowsPrice] = useState<number | null>(null);
+
+  // Check if order is paid - paid orders cannot be edited (except remarks and status)
+  const isPaid = status === 'paid';
+
+  // Check if only remarks or status have changed (allowed even when paid)
+  const hasOnlyAllowedFieldsChanged = () => {
+    if (!isPaid) return false;
+    const remarksChanged = remarks !== (order.remarks || '');
+    const statusChanged = status !== order.status;
+    return remarksChanged || statusChanged;
+  };
+
+  // Check if prices have been overridden by comparing stored prices with current service prices
+  const detectPriceOverride = () => {
+    let totalCalculatedBows = 0;
+    let hasPriceOverride = false;
+
+    order.order_items.forEach((item) => {
+      totalCalculatedBows += item.bows_price * item.quantity;
+
+      // Check if the stored price differs from the current service price
+      if (item.bows_price !== item.service.bows_price) {
+        hasPriceOverride = true;
+      }
+    });
+
+    // If prices were overridden or if the order total doesn't match calculated total, use the order's stored total
+    if (hasPriceOverride || order.total_bows_price !== totalCalculatedBows) {
+      return order.total_bows_price;
+    }
+
+    return null;
+  };
+
+  const [customBowsPrice, setCustomBowsPrice] = useState<number | null>(detectPriceOverride());
   const [depositPercentage, setDepositPercentage] = useState(order.deposit_percentage || 30);
   const [remarks, setRemarks] = useState(order.remarks || '');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -86,14 +122,15 @@ export function OrderEditForm({ order, services, showButtons = true }: OrderEdit
     };
   }, [status, salesperson, items, customBowsPrice, depositPercentage, remarks]); // Re-create listener when form data changes
 
-  // Calculate totals
+  // Calculate totals using the order_items prices (which may have been overridden)
   const calculateTotals = (orderItems: OrderItem[]) => {
     let totalOriginal = 0;
     let totalBows = 0;
 
     orderItems.forEach((item) => {
-      totalOriginal += item.service.original_price * item.quantity;
-      totalBows += item.service.bows_price * item.quantity;
+      // Use the stored prices from order_items, not the service prices
+      totalOriginal += item.original_price * item.quantity;
+      totalBows += item.bows_price * item.quantity;
     });
 
     return {
@@ -109,6 +146,16 @@ export function OrderEditForm({ order, services, showButtons = true }: OrderEdit
     ...calculatedTotals,
     totalBows: finalBowsPrice,
     totalSavings: calculatedTotals.totalOriginal - finalBowsPrice,
+  };
+
+  // Calculate adjusted item prices when custom price is set
+  const getAdjustedItemPrice = (item: OrderItem) => {
+    if (customBowsPrice === null) {
+      return item.bows_price;
+    }
+    // Proportionally adjust the item price based on the custom total
+    const proportion = customBowsPrice / calculatedTotals.totalBows;
+    return item.bows_price * proportion;
   };
 
   // Calculate deposit amount based on percentage
@@ -150,6 +197,8 @@ export function OrderEditForm({ order, services, showButtons = true }: OrderEdit
       id: `temp-${Date.now()}`,
       service_id: service.id,
       quantity: 1,
+      original_price: service.original_price,
+      bows_price: service.bows_price,
       service: {
         id: service.id,
         name: service.name,
@@ -175,6 +224,8 @@ export function OrderEditForm({ order, services, showButtons = true }: OrderEdit
           id: item.id.startsWith("temp-") ? undefined : item.id,
           service_id: item.service_id,
           quantity: item.quantity,
+          original_price: item.original_price,
+          bows_price: getAdjustedItemPrice(item),
         })),
         total_original_price: totals.totalOriginal,
         total_bows_price: totals.totalBows,
@@ -202,6 +253,15 @@ export function OrderEditForm({ order, services, showButtons = true }: OrderEdit
 
   return (
     <div className="space-y-6 relative">
+      {/* Paid Order Notice */}
+      {isPaid && (
+        <div className="p-4 bg-green-600/10 border border-green-600 rounded-lg">
+          <p className="text-green-500 font-semibold">
+            ✓ This order has been marked as paid. Only status and remarks can be edited.
+          </p>
+        </div>
+      )}
+
       {/* Loading Overlay */}
       {isSubmitting && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center">
@@ -239,7 +299,8 @@ export function OrderEditForm({ order, services, showButtons = true }: OrderEdit
                 <select
                   value={salesperson}
                   onChange={(e) => setSalesperson(e.target.value)}
-                  className="w-full px-4 py-2 bg-brand-charcoal border border-brand-graphite rounded-lg focus:outline-none focus:border-brand-off-white"
+                  disabled={isPaid}
+                  className="w-full px-4 py-2 bg-brand-charcoal border border-brand-graphite rounded-lg focus:outline-none focus:border-brand-off-white disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <option value="">Select salesperson...</option>
                   {SALESPEOPLE.map((person) => (
@@ -263,6 +324,7 @@ export function OrderEditForm({ order, services, showButtons = true }: OrderEdit
                   min={0}
                   max={100}
                   step={1}
+                  disabled={isPaid}
                   className="w-full"
                 />
                 <p className="text-xs text-brand-platinum mt-1">
@@ -312,7 +374,7 @@ export function OrderEditForm({ order, services, showButtons = true }: OrderEdit
               <div className="flex-1">
                 <h4 className="font-semibold mb-1">{item.service.name}</h4>
                 <p className="text-sm text-brand-platinum">
-                  ${item.service.bows_price.toFixed(2)} each
+                  ${getAdjustedItemPrice(item).toFixed(2)} each
                 </p>
               </div>
               <div className="flex items-center gap-2">
@@ -320,7 +382,7 @@ export function OrderEditForm({ order, services, showButtons = true }: OrderEdit
                   variant="secondary"
                   size="sm"
                   onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                  disabled={item.quantity <= 1}
+                  disabled={item.quantity <= 1 || isPaid}
                 >
                   -
                 </Button>
@@ -332,28 +394,30 @@ export function OrderEditForm({ order, services, showButtons = true }: OrderEdit
                   }
                   className="w-16 text-center"
                   min="1"
+                  disabled={isPaid}
                 />
                 <Button
                   variant="secondary"
                   size="sm"
                   onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                  disabled={isPaid}
                 >
                   +
                 </Button>
               </div>
               <div className="text-right w-24">
                 <p className="text-brand-silver line-through text-sm">
-                  ${(item.service.original_price * item.quantity).toFixed(2)}
+                  ${(item.original_price * item.quantity).toFixed(2)}
                 </p>
                 <p className="text-green-500 font-bold">
-                  ${(item.service.bows_price * item.quantity).toFixed(2)}
+                  ${(getAdjustedItemPrice(item) * item.quantity).toFixed(2)}
                 </p>
               </div>
               <Button
                 variant="destructive"
                 size="sm"
                 onClick={() => removeItem(item.id)}
-                disabled={items.length === 1}
+                disabled={items.length === 1 || isPaid}
               >
                 <Trash2 className="w-4 h-4" />
               </Button>
@@ -361,30 +425,32 @@ export function OrderEditForm({ order, services, showButtons = true }: OrderEdit
           ))}
 
           {/* Add Service Dropdown */}
-          <div className="pt-4 border-t border-brand-graphite">
-            <label className="block text-sm font-medium mb-2">
-              Add Service
-            </label>
-            <select
-              onChange={(e) => {
-                if (e.target.value) {
-                  addService(e.target.value);
-                  e.target.value = "";
-                }
-              }}
-              className="w-full px-4 py-2 bg-brand-charcoal border border-brand-graphite rounded-lg focus:outline-none focus:border-brand-off-white"
-              defaultValue=""
-            >
-              <option value="" disabled>
-                Select a service to add...
-              </option>
-              {services.map((service) => (
-                <option key={service.id} value={service.id}>
-                  {service.name} - ${service.bows_price.toFixed(2)}
+          {!isPaid && (
+            <div className="pt-4 border-t border-brand-graphite">
+              <label className="block text-sm font-medium mb-2">
+                Add Service
+              </label>
+              <select
+                onChange={(e) => {
+                  if (e.target.value) {
+                    addService(e.target.value);
+                    e.target.value = "";
+                  }
+                }}
+                className="w-full px-4 py-2 bg-brand-charcoal border border-brand-graphite rounded-lg focus:outline-none focus:border-brand-off-white"
+                defaultValue=""
+              >
+                <option value="" disabled>
+                  Select a service to add...
                 </option>
-              ))}
-            </select>
-          </div>
+                {services.map((service) => (
+                  <option key={service.id} value={service.id}>
+                    {service.name} - ${service.bows_price.toFixed(2)}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -427,8 +493,9 @@ export function OrderEditForm({ order, services, showButtons = true }: OrderEdit
                   }
                   placeholder={calculatedTotals.totalBows.toFixed(2)}
                   className="flex-1"
+                  disabled={isPaid}
                 />
-                {customBowsPrice !== null && (
+                {customBowsPrice !== null && !isPaid && (
                   <Button
                     variant="secondary"
                     size="sm"
@@ -439,7 +506,10 @@ export function OrderEditForm({ order, services, showButtons = true }: OrderEdit
                 )}
               </div>
               <p className="text-xs text-brand-platinum mt-1">
-                Leave empty to use calculated price, or enter custom amount for discounts/adjustments
+                {isPaid
+                  ? "Order is paid and cannot be modified"
+                  : "Leave empty to use calculated price, or enter custom amount for discounts/adjustments"
+                }
               </p>
             </div>
 
@@ -482,12 +552,14 @@ export function OrderEditForm({ order, services, showButtons = true }: OrderEdit
         <div className="flex gap-4">
           <Button
             onClick={handleSubmit}
-            disabled={isSubmitting}
+            disabled={isSubmitting || (isPaid && !hasOnlyAllowedFieldsChanged())}
             className="flex-1"
             size="lg"
           >
             {isSubmitting ? (
               "Saving..."
+            ) : isPaid && !hasOnlyAllowedFieldsChanged() ? (
+              "Order Paid - Cannot Edit"
             ) : (
               <>
                 <Save className="w-4 h-4 mr-2" />
@@ -502,7 +574,7 @@ export function OrderEditForm({ order, services, showButtons = true }: OrderEdit
             size="lg"
           >
             <X className="w-4 h-4 mr-2" />
-            Cancel
+            {isPaid ? "Close" : "Cancel"}
           </Button>
         </div>
       )}
