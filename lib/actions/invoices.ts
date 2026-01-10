@@ -37,10 +37,17 @@ export async function sendInvoice(orderId: string) {
     // Initialize Resend
     const resend = new Resend(process.env.RESEND_API_KEY);
 
+    // Recalculate deposit values for consistency
+    const totalBowsPrice = Number(order.total_bows_price);
+    const depositPercentage = Number(order.deposit_percentage) || 0;
+    const calculatedDeposit = Math.round(totalBowsPrice * (depositPercentage / 100) * 100) / 100;
+    const balanceDue = Math.round((totalBowsPrice - calculatedDeposit) * 100) / 100;
+
     // Send email with PDF attachment
     const { data: emailData, error: emailError } = await resend.emails.send({
-      from: "PixelPro Studios <billing@pixelprostudios.sg>", // Change to your verified domain
+      from: "PixelPro Studios <billing@pixelprostudios.sg>",
       to: order.lead.email,
+      cc: "billing@pixelprostudios.sg",
       subject: `Invoice for Order ${order.reference_number}`,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -51,9 +58,9 @@ export async function sendInvoice(orderId: string) {
           <div style="background: #f5f5f5; padding: 20px; margin: 20px 0; border-radius: 8px;">
             <h3 style="margin-top: 0;">Order Details</h3>
             <p><strong>Invoice Number:</strong> ${order.reference_number}</p>
-            <p><strong>Total Amount:</strong> $${order.total_bows_price.toFixed(2)}</p>
-            <p style="color: #0066cc;"><strong>✓ Deposit Paid (${order.deposit_percentage}%):</strong> $${order.deposit_amount.toFixed(2)}</p>
-            <p style="color: #cc0000;"><strong>Balance Due:</strong> $${(order.total_bows_price - order.deposit_amount).toFixed(2)}</p>
+            <p><strong>Total Amount:</strong> $${totalBowsPrice.toFixed(2)}</p>
+            <p style="color: #0066cc;"><strong>✓ Deposit Paid (${depositPercentage}%):</strong> $${calculatedDeposit.toFixed(2)}</p>
+            <p style="color: #cc0000;"><strong>Balance Due:</strong> $${balanceDue.toFixed(2)}</p>
           </div>
 
           <p>Your deposit has been received.</p>
@@ -125,7 +132,11 @@ async function generateInvoicePDF(order: any): Promise<Buffer> {
   }
 
 
-  // Invoice Title
+  const totalBowsPrice = Number(order.total_bows_price);
+  const depositPercentage = Number(order.deposit_percentage) || 0;
+  const calculatedDeposit = Math.round(totalBowsPrice * (depositPercentage / 100) * 100) / 100;
+  const balanceDue = Math.round((totalBowsPrice - calculatedDeposit) * 100) / 100;
+
   doc.setFontSize(16);
   doc.setFont("helvetica", "bold");
   doc.text("INVOICE", 150, 18);
@@ -137,7 +148,7 @@ async function generateInvoicePDF(order: any): Promise<Buffer> {
   doc.text(`Date: ${formatSingaporeDate(order.created_at)}`, 150, 37);
   doc.setTextColor(0, 100, 200);
   doc.setFont("helvetica", "bold");
-  doc.text(`Status: Deposit Paid (${order.deposit_percentage}%)`, 150, 44);
+  doc.text(`Status: Deposit Paid (${depositPercentage}%)`, 150, 44);
   doc.setTextColor(0, 0, 0);
   doc.setFont("helvetica", "normal");
 
@@ -210,11 +221,13 @@ async function generateInvoicePDF(order: any): Promise<Buffer> {
   doc.setLineWidth(0.5);
   doc.line(120, yPosition - 3, 190, yPosition - 3);
 
+
+
   doc.setFontSize(12);
   doc.setFont("helvetica", "bold");
   doc.setTextColor(0, 0, 0);
   doc.text("Total:", 120, yPosition + 5);
-  doc.text(`$${order.total_bows_price.toFixed(2)}`, 170, yPosition + 5);
+  doc.text(`$${totalBowsPrice.toFixed(2)}`, 170, yPosition + 5);
 
   // Payment Information - Always show deposit paid for customer receipts
   yPosition += 15;
@@ -222,13 +235,13 @@ async function generateInvoicePDF(order: any): Promise<Buffer> {
   doc.setFont("helvetica", "normal");
   doc.setTextColor(0, 150, 0);
   doc.text("Deposit Paid:", 120, yPosition);
-  doc.text(`$${order.deposit_amount.toFixed(2)}`, 170, yPosition);
+  doc.text(`$${calculatedDeposit.toFixed(2)}`, 170, yPosition);
 
   yPosition += 7;
   doc.setTextColor(255, 0, 0);
   doc.setFont("helvetica", "bold");
   doc.text("Balance Due:", 120, yPosition);
-  doc.text(`$${(order.total_bows_price - order.deposit_amount).toFixed(2)}`, 170, yPosition);
+  doc.text(`$${balanceDue.toFixed(2)}`, 170, yPosition);
 
   // Footer
   doc.setFontSize(9);
